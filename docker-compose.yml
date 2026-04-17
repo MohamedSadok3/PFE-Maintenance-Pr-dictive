@@ -1,0 +1,119 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:15
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: smartmaintain
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secret
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - smartmaintain-net
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - smartmaintain-net
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    command: /usr/sbin/mosquitto -c /mosquitto/config/mosquitto.conf
+    networks:
+      - smartmaintain-net
+
+  auth:
+    build: ./services/auth
+    restart: unless-stopped
+    ports:
+      - "5004:5004"
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+    networks:
+      - smartmaintain-net
+
+  iot:
+    build: ./services/iot
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - mosquitto
+    volumes:
+      - ./services/iot/data:/app/data
+    networks:
+      - smartmaintain-net
+
+  ml:
+    build: ./services/ml
+    restart: unless-stopped
+    ports:
+      - "5002:5002"
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    networks:
+      - smartmaintain-net
+
+  alertes:
+    build: ./services/alertes
+    restart: unless-stopped
+    ports:
+      - "5003:5003"
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - smartmaintain-net
+
+  gateway:
+    build: ./services/gateway
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    depends_on:
+      - auth
+      - iot
+      - ml
+      - alertes
+    networks:
+      - smartmaintain-net
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - gateway
+    networks:
+      - smartmaintain-net
+
+volumes:
+  pgdata:
+
+networks:
+  smartmaintain-net:
+    driver: bridge
