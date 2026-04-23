@@ -3,11 +3,16 @@ import { Toaster } from 'react-hot-toast'
 import Layout from './components/Layout'
 import RequireAuth from './components/RequireAuth'
 import AlertesPage from './pages/AlertesPage'
+import AlertDetailPage from './pages/AlertDetailPage'
 import DashboardPage from './pages/DashboardPage'
 import FineTuningPage from './pages/FineTuningPage'
 import LoginPage from './pages/LoginPage'
+import PlantRegistrationPage from './pages/PlantRegistrationPage'
+import PlantProfilePage from './pages/PlantProfilePage'
 import ComposantsPage from './pages/ComposantsPage'
 import SurveillancePage from './pages/SurveillancePage'
+import SuperAdminPlantsPage from './pages/SuperAdminPlantsPage'
+import SuperAdminRegistrationsPage from './pages/SuperAdminRegistrationsPage'
 import UtilisateursPage from './pages/UtilisateursPage'
 
 function App() {
@@ -15,6 +20,8 @@ function App() {
     <>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/inscription-usine" element={<PlantRegistrationPage />} />
+        <Route path="/alerte/*" element={<Navigate to="/alertes" replace />} />
 
         <Route
           element={
@@ -25,12 +32,44 @@ function App() {
         >
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route
+            path="/usine/profil"
+            element={
+              <RequireAuth roles={['admin']}>
+                <PlantProfilePage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/superadmin/usines"
+            element={
+              <RequireAuth roles={['superadmin']}>
+                <SuperAdminPlantsPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/superadmin/inscriptions"
+            element={
+              <RequireAuth roles={['superadmin']}>
+                <SuperAdminRegistrationsPage />
+              </RequireAuth>
+            }
+          />
           <Route path="/surveillance" element={<SurveillancePage />} />
           <Route
             path="/alertes"
             element={
               <RequireAuth roles={['admin', 'superviseur', 'technicien']}>
                 <AlertesPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/alertes/:alertId"
+            element={
+              <RequireAuth roles={['admin', 'superviseur', 'technicien']}>
+                <AlertDetailPage />
               </RequireAuth>
             }
           />

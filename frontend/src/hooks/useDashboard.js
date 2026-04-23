@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { io } from 'socket.io-client'
 import api from '../services/api'
+import { getStoredUser } from '../utils/storage'
 
 const MACHINE_KEYS = ['moteur', 'pompe', 'compresseur', 'echangeur']
 
@@ -21,7 +22,7 @@ function createSeedSparkline() {
 }
 
 export default function useDashboard() {
-  const user = useMemo(() => JSON.parse(localStorage.getItem('user') || 'null'), [])
+  const user = useMemo(() => getStoredUser(), [])
   const userMachineKey = useMemo(
     () => (Array.isArray(user?.machines) ? user.machines.join('|') : ''),
     [user?.machines],

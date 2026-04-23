@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { io } from 'socket.io-client'
 import api from '../services/api'
+import { getStoredUser } from '../utils/storage'
 
 const MACHINES = {
   moteur: 'Moteur',
@@ -28,7 +29,7 @@ function toLabel(name) {
 }
 
 export default function useSurveillance() {
-  const user = useMemo(() => JSON.parse(localStorage.getItem('user') || 'null'), [])
+  const user = useMemo(() => getStoredUser(), [])
   const userMachineKey = useMemo(
     () => (Array.isArray(user?.machines) ? user.machines.join('|') : ''),
     [user?.machines],

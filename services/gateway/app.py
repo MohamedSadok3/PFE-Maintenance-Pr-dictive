@@ -22,6 +22,7 @@ ALERTES_URL = os.environ.get("ALERTES_URL", "http://alertes:5003")
 SERVICE_MAP = {
     "auth": AUTH_URL,
     "users": AUTH_URL,
+    "plants": AUTH_URL,
     "components": AUTH_URL,
     "iot": IOT_URL,
     "ml": ML_URL,
@@ -84,6 +85,8 @@ def _is_public_route():
         return True
     if request.path == "/api/auth/login" and request.method == "POST":
         return True
+    if request.path == "/api/auth/register-plant" and request.method == "POST":
+        return True
     return False
 
 
@@ -124,6 +127,12 @@ def proxy_users(path):
 @app.route("/api/components/<path:path>", methods=["GET", "POST", "PATCH", "PUT", "DELETE"])
 def proxy_components(path):
     return _proxy_request("components", path)
+
+
+@app.route("/api/plants", defaults={"path": ""}, methods=["GET", "POST", "PATCH", "PUT", "DELETE"])
+@app.route("/api/plants/<path:path>", methods=["GET", "POST", "PATCH", "PUT", "DELETE"])
+def proxy_plants(path):
+    return _proxy_request("plants", path)
 
 
 @app.route("/api/iot", defaults={"path": ""}, methods=["GET", "POST", "PATCH", "PUT", "DELETE"])

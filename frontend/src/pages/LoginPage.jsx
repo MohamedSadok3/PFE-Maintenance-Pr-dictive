@@ -16,10 +16,11 @@ function LoginPage() {
   const from = location.state?.from?.pathname || '/dashboard'
 
   const getRoleHome = (role) => {
+    if (role === 'superadmin') return '/superadmin/inscriptions'
     if (role === 'admin') return '/dashboard'
     if (role === 'superviseur') return '/dashboard'
-    if (role === 'technicien') return '/alertes'
-    return '/surveillance'
+    if (role === 'technicien') return '/dashboard'
+    return '/dashboard'
   }
 
   const onSubmit = async (values) => {
@@ -83,6 +84,11 @@ function LoginPage() {
           className="w-full rounded-lg bg-[#16a34a] py-2.5 text-white font-medium hover:bg-green-700 transition cursor-pointer disabled:opacity-80 disabled:cursor-not-allowed"
           disabled={isSubmitting}
         />
+        <div className="text-center">
+          <a href="/inscription-usine" className="text-sm text-[#16a34a] hover:underline">
+            Nouvelle usine ? Demander une inscription
+          </a>
+        </div>
         {isSubmitting && (
           <div className="flex justify-center">
             <span className="h-5 w-5 rounded-full border-2 border-[#16a34a] border-t-transparent animate-spin" />

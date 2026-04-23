@@ -1,4 +1,5 @@
 import { Navigate, useLocation } from 'react-router-dom'
+import { getStoredUser } from '../utils/storage'
 
 function RequireAuth({ children, roles = [] }) {
   const location = useLocation()
@@ -8,8 +9,7 @@ function RequireAuth({ children, roles = [] }) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
-  const storedUser = localStorage.getItem('user')
-  const user = storedUser ? JSON.parse(storedUser) : null
+  const user = getStoredUser()
 
   if (roles.length > 0 && !roles.includes(user?.role)) {
     return <Navigate to="/dashboard" replace />
