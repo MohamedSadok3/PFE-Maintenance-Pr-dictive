@@ -7,3 +7,19 @@ export function getStoredUser() {
     return null
   }
 }
+
+export function setStoredUser(user) {
+  localStorage.setItem('user', JSON.stringify(user))
+}
+
+export function getStoredToken() {
+  return localStorage.getItem('token') || null
+}
+
+export function setStoredToken(token) {
+  localStorage.setItem('token', token)
+}
+
+export function clearSession() {
+  localStorage.clear()
+}

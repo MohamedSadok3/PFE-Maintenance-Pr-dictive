@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { io } from 'socket.io-client'
-import api from '../services/api'
+import { getDashboardSummary } from '../services/dashboardService'
+import { getComponents } from '../services/componentService'
+import { createSocket } from '../services/socketService'
 import { getStoredUser } from '../utils/storage'
 
 const MACHINE_KEYS = ['moteur', 'pompe', 'compresseur', 'echangeur']
@@ -52,7 +53,7 @@ export default function useDashboard() {
     let mounted = true
     const loadComponents = async () => {
       try {
-        const response = await api.get('/api/components')
+        const response = await getComponents()
         if (mounted) {
           const enabled = (response.data.components || []).filter((item) => item.enabled)
           setComponents(enabled)
@@ -95,7 +96,7 @@ export default function useDashboard() {
 
     const fetchSummary = async () => {
       try {
-        const { data } = await api.get('/api/dashboard/summary')
+        const { data } = await getDashboardSummary()
         if (isMounted) {
           setSummary((prev) => ({
             ...prev,
@@ -112,7 +113,7 @@ export default function useDashboard() {
     fetchSummary()
     const intervalId = setInterval(fetchSummary, 30000)
 
-    const socket = io('http://localhost:5000', { transports: ['websocket', 'polling'] })
+    const socket = createSocket()
 
     socket.on('alert:new', (alert) => {
       localStorage.setItem('hasNewAlerts', 'true')

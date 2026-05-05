@@ -1,22 +1,30 @@
 import api from './api'
-import { getStoredUser } from '../utils/storage'
+import { clearSession, getStoredToken, getStoredUser } from '../utils/storage'
 
+// Auth
 export const login = (email, password) => api.post('/api/auth/login', { email, password })
-export const registerPlant = (payload) => api.post('/api/auth/register-plant', payload)
-export const getRegistrations = (params) => api.get('/api/auth/registrations', { params })
-export const reviewRegistration = (id, payload) => api.patch(`/api/auth/registrations/${id}/review`, payload)
-export const getMyPlant = () => api.get('/api/plants/me')
-export const updateMyPlant = (payload) => api.patch('/api/plants/me', payload)
-export const getPlants = (params) => api.get('/api/plants', { params })
-export const updatePlant = (id, payload) => api.patch(`/api/plants/${id}`, payload)
-export const deletePlant = (id) => api.delete(`/api/plants/${id}`)
-export const getPlantOverview = (id) => api.get(`/api/plants/${id}/overview`)
 
 export const logout = () => {
-  localStorage.clear()
+  clearSession()
   window.location.href = '/login'
 }
 
 export const getUser = () => getStoredUser()
+export const getToken = () => getStoredToken()
 
-export const getToken = () => localStorage.getItem('token')
+// Plant registration flow
+export const registerPlant = (payload) => api.post('/api/auth/register-plant', payload)
+
+// Superadmin: registration reviews
+export const getRegistrations = (params) => api.get('/api/auth/registrations', { params })
+export const reviewRegistration = (id, payload) =>
+  api.patch(`/api/auth/registrations/${id}/review`, payload)
+
+// Admin: own plant
+export const getMyPlant = () => api.get('/api/plants/me')
+export const updateMyPlant = (payload) => api.patch('/api/plants/me', payload)
+
+// Superadmin: all plants
+export const getPlants = (params) => api.get('/api/plants', { params })
+export const deletePlant = (id) => api.delete(`/api/plants/${id}`)
+export const getPlantOverview = (id) => api.get(`/api/plants/${id}/overview`)
