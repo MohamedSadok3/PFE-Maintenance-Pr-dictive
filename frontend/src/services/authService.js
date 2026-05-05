@@ -9,6 +9,8 @@ export const getMyPlant = () => api.get('/api/plants/me')
 export const updateMyPlant = (payload) => api.patch('/api/plants/me', payload)
 export const getPlants = (params) => api.get('/api/plants', { params })
 export const updatePlant = (id, payload) => api.patch(`/api/plants/${id}`, payload)
+export const deletePlant = (id) => api.delete(`/api/plants/${id}`)
+export const getPlantOverview = (id) => api.get(`/api/plants/${id}/overview`)
 
 export const logout = () => {
   localStorage.clear()

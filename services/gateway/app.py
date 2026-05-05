@@ -18,6 +18,11 @@ AUTH_URL = os.environ.get("AUTH_URL", "http://auth:5004")
 IOT_URL = os.environ.get("IOT_URL", "http://iot:5001")
 ML_URL = os.environ.get("ML_URL", "http://ml:5002")
 ALERTES_URL = os.environ.get("ALERTES_URL", "http://alertes:5003")
+FRONTEND_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get("FRONTEND_ORIGINS", "http://localhost:3000,http://localhost:5173").split(",")
+    if origin.strip()
+]
 
 SERVICE_MAP = {
     "auth": AUTH_URL,
@@ -31,9 +36,9 @@ SERVICE_MAP = {
 }
 
 app = Flask(__name__)
-CORS(app, origins=["http://localhost:3000"], supports_credentials=True)
+CORS(app, origins=FRONTEND_ORIGINS, supports_credentials=True)
 socketio_server = SocketIO(
-    app, cors_allowed_origins=["http://localhost:3000"], async_mode="eventlet"
+    app, cors_allowed_origins=FRONTEND_ORIGINS, async_mode="eventlet"
 )
 
 alertes_socket = socketio.Client(reconnection=True)

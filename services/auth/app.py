@@ -6,6 +6,7 @@ import re
 import bcrypt
 import jwt
 import psycopg2
+import requests
 from psycopg2 import errors
 from dotenv import load_dotenv
 from flask import Flask, g, jsonify, request
@@ -19,6 +20,10 @@ JWT_SECRET = os.environ.get("JWT_SECRET")
 JWT_EXPIRES_HOURS = 8
 COMPONENT_TYPES = {"moteur", "pompe", "compresseur", "echangeur"}
 PLANT_CODE_PATTERN = re.compile(r"^[a-z0-9-]{3,32}$")
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
+RESEND_FROM_EMAIL = os.environ.get("RESEND_FROM_EMAIL")
+RESEND_API_URL = os.environ.get("RESEND_API_URL", "https://api.resend.com/emails")
+APP_BASE_URL = os.environ.get("APP_BASE_URL", "http://localhost:3000")
 
 app = Flask(__name__)
 CORS(app)
@@ -72,6 +77,48 @@ def _serialize_plant(row):
         "approved_at": row["approved_at"].isoformat() if row.get("approved_at") else None,
         "created_at": row["created_at"].isoformat() if row.get("created_at") else None,
     }
+
+
+def send_registration_approved_email(
+    recipient_email,
+    recipient_name,
+    plant_name,
+    plant_code,
+):
+    if not RESEND_API_KEY or not RESEND_FROM_EMAIL:
+        app.logger.warning("Skipping approval email: Resend is not configured.")
+        return False
+    if not recipient_email:
+        return False
+
+    login_url = f"{APP_BASE_URL.rstrip('/')}/login"
+    subject = f"Inscription de l'usine {plant_name} approuvee"
+    body = (
+        f"Bonjour {recipient_name or ''},\n\n"
+        f"L'inscription de votre usine a ete approuvee.\n\n"
+        f"Nom de l'usine: {plant_name}\n"
+        f"Code usine: {plant_code}\n\n"
+        f"Vous pouvez vous connecter ici: {login_url}\n\n"
+        "Cordialement,\n"
+        "Equipe SmartMaintain"
+    )
+
+    response = requests.post(
+        RESEND_API_URL,
+        headers={
+            "Authorization": f"Bearer {RESEND_API_KEY}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "from": RESEND_FROM_EMAIL,
+            "to": [recipient_email],
+            "subject": subject,
+            "text": body,
+        },
+        timeout=10,
+    )
+    response.raise_for_status()
+    return True
 
 
 def create_token(user):
@@ -191,6 +238,14 @@ def init_db():
                         FOREIGN KEY (plant_id) REFERENCES plants(id) ON DELETE SET NULL;
                     END IF;
                 END $$;
+                """
+            )
+            cur.execute(
+                """
+                ALTER TABLE users DROP CONSTRAINT IF EXISTS users_plant_id_fkey;
+                ALTER TABLE users
+                ADD CONSTRAINT users_plant_id_fkey
+                FOREIGN KEY (plant_id) REFERENCES plants(id) ON DELETE CASCADE;
                 """
             )
             cur.execute(
@@ -671,50 +726,114 @@ def list_plants():
 @app.route("/api/plants/<int:plant_id>", methods=["PATCH"])
 @require_auth(["superadmin"])
 def update_plant_by_superadmin(plant_id):
-    data = request.get_json(silent=True) or {}
-    allowed = {
-        "name",
-        "status",
-        "contact_name",
-        "contact_email",
-        "contact_phone",
-        "location",
-        "industry",
-        "description",
-    }
-    fields = []
-    values = []
-    for key in allowed:
-        if key in data:
-            if key == "status" and data.get(key) not in {"active", "inactive"}:
-                return jsonify({"error": "Invalid status."}), 400
-            value = data.get(key)
-            if isinstance(value, str):
-                value = value.strip() or None
-            fields.append(f"{key} = %s")
-            values.append(value)
+    return jsonify({"error": "Superadmin cannot modify plant information."}), 403
 
-    if not fields:
-        return jsonify({"error": "No valid fields to update."}), 400
 
-    values.append(plant_id)
+@app.route("/api/plants/<int:plant_id>", methods=["DELETE"])
+@require_auth(["superadmin"])
+def delete_plant_by_superadmin(plant_id):
+    with get_db_connection() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT id, code, name FROM plants WHERE id = %s;", (plant_id,))
+            plant = cur.fetchone()
+            if not plant:
+                return jsonify({"error": "Plant not found."}), 404
+            if plant["code"] == "usine-demo":
+                return jsonify({"error": "Demo plant cannot be deleted."}), 400
+
+            # Alerts service stores alerts/interventions in the same PostgreSQL database.
+            cur.execute(
+                """
+                DELETE FROM interventions
+                WHERE alert_id IN (SELECT id FROM alerts WHERE plant_id = %s);
+                """,
+                (plant_id,),
+            )
+            cur.execute("DELETE FROM alerts WHERE plant_id = %s;", (plant_id,))
+            cur.execute("DELETE FROM components WHERE plant_id = %s;", (plant_id,))
+            cur.execute("DELETE FROM users WHERE plant_id = %s;", (plant_id,))
+            cur.execute("DELETE FROM plants WHERE id = %s;", (plant_id,))
+            conn.commit()
+    return jsonify({"message": "Plant and related data deleted successfully."})
+
+
+@app.route("/api/plants/<int:plant_id>/overview", methods=["GET"])
+@require_auth(["superadmin"])
+def get_plant_overview(plant_id):
     with get_db_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(
-                f"""
-                UPDATE plants
-                SET {", ".join(fields)}
-                WHERE id = %s
-                RETURNING id, name, code, status, contact_name, contact_email, contact_phone,
-                          location, industry, description, approved_by, approved_at, created_at;
+                """
+                SELECT id, name, code, status, contact_name, contact_email, contact_phone,
+                       location, industry, description, approved_by, approved_at, created_at
+                FROM plants
+                WHERE id = %s;
                 """,
-                tuple(values),
+                (plant_id,),
             )
-            row = cur.fetchone()
-            conn.commit()
-    if not row:
-        return jsonify({"error": "Plant not found."}), 404
-    return jsonify({"plant": _serialize_plant(row)})
+            plant = cur.fetchone()
+            if not plant:
+                return jsonify({"error": "Plant not found."}), 404
+
+            cur.execute(
+                """
+                SELECT id, name, email, role, plant_id, machines, last_login, created_at
+                FROM users
+                WHERE plant_id = %s
+                ORDER BY role ASC, id ASC;
+                """,
+                (plant_id,),
+            )
+            users = cur.fetchall()
+
+            cur.execute("SELECT COUNT(*)::INT AS count FROM users WHERE plant_id = %s;", (plant_id,))
+            users_count = cur.fetchone()["count"]
+            cur.execute(
+                "SELECT COUNT(*)::INT AS count FROM users WHERE plant_id = %s AND role = 'admin';",
+                (plant_id,),
+            )
+            admins_count = cur.fetchone()["count"]
+            cur.execute(
+                "SELECT COUNT(*)::INT AS count FROM users WHERE plant_id = %s AND role = 'superviseur';",
+                (plant_id,),
+            )
+            supervisors_count = cur.fetchone()["count"]
+            cur.execute(
+                "SELECT COUNT(*)::INT AS count FROM users WHERE plant_id = %s AND role = 'technicien';",
+                (plant_id,),
+            )
+            technicians_count = cur.fetchone()["count"]
+            cur.execute("SELECT COUNT(*)::INT AS count FROM components WHERE plant_id = %s;", (plant_id,))
+            components_count = cur.fetchone()["count"]
+            cur.execute("SELECT COUNT(*)::INT AS count FROM alerts WHERE plant_id = %s;", (plant_id,))
+            total_alerts = cur.fetchone()["count"]
+            cur.execute(
+                "SELECT COUNT(*)::INT AS count FROM alerts WHERE plant_id = %s AND status != 'resolved';",
+                (plant_id,),
+            )
+            open_alerts = cur.fetchone()["count"]
+            cur.execute(
+                "SELECT COUNT(*)::INT AS count FROM alerts WHERE plant_id = %s AND status = 'resolved';",
+                (plant_id,),
+            )
+            resolved_alerts = cur.fetchone()["count"]
+
+    return jsonify(
+        {
+            "plant": _serialize_plant(plant),
+            "users": [_serialize_user(user) for user in users],
+            "kpis": {
+                "users_count": users_count,
+                "admins_count": admins_count,
+                "supervisors_count": supervisors_count,
+                "technicians_count": technicians_count,
+                "components_count": components_count,
+                "total_alerts": total_alerts,
+                "open_alerts": open_alerts,
+                "resolved_alerts": resolved_alerts,
+            },
+        }
+    )
 
 
 @app.route("/api/auth/register-plant", methods=["POST"])
@@ -901,6 +1020,7 @@ def review_registration(registration_id):
             payload = registration["payload"] or {}
             plant_payload = payload.get("plant") or {}
             users_payload = payload.get("users") or {}
+            admin_payload = users_payload.get("admin") or {}
 
             cur.execute(
                 """
@@ -954,6 +1074,31 @@ def review_registration(registration_id):
             )
             reviewed = cur.fetchone()
             conn.commit()
+
+    # Email sending should not break the approval flow.
+    recipients = []
+    contact_email = plant_payload.get("contact_email")
+    if contact_email:
+        recipients.append(
+            (
+                contact_email,
+                plant_payload.get("contact_name") or "Responsable usine",
+            )
+        )
+    admin_email = admin_payload.get("email")
+    if admin_email and admin_email != contact_email:
+        recipients.append((admin_email, admin_payload.get("name") or "Admin usine"))
+
+    for recipient_email, recipient_name in recipients:
+        try:
+            send_registration_approved_email(
+                recipient_email=recipient_email,
+                recipient_name=recipient_name,
+                plant_name=plant_payload.get("name") or registration["plant_name"],
+                plant_code=plant_payload.get("code") or registration["plant_code"],
+            )
+        except Exception as exc:
+            app.logger.exception("Failed to send approval email to %s: %s", recipient_email, exc)
 
     return jsonify({"registration": reviewed, "plant": plant})
 

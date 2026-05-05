@@ -12,6 +12,29 @@ function PlantRegistrationPage() {
   } = useForm()
 
   const onSubmit = async (values) => {
+    const optionalAccounts = [
+      {
+        label: 'superviseur',
+        name: values.supervisor_name,
+        email: values.supervisor_email,
+        password: values.supervisor_password,
+      },
+      {
+        label: 'technicien',
+        name: values.technician_name,
+        email: values.technician_email,
+        password: values.technician_password,
+      },
+    ]
+
+    for (const account of optionalAccounts) {
+      const filled = [account.name, account.email, account.password].filter((v) => (v || '').trim() !== '').length
+      if (filled > 0 && filled < 3) {
+        toast.error(`Compte ${account.label}: renseigner nom + email + mot de passe, ou laisser vide.`)
+        return
+      }
+    }
+
     const payload = {
       plant: {
         name: values.plant_name,
