@@ -24,11 +24,11 @@ function timeAgo(inputDate) {
   if (!inputDate) return '-'
   const diffMs = Date.now() - new Date(inputDate).getTime()
   const mins = Math.max(1, Math.floor(diffMs / 60000))
-  if (mins < 60) return `${mins} min ago`
+  if (mins < 60) return `il y a ${mins} min`
   const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours} h ago`
+  if (hours < 24) return `il y a ${hours} h`
   const days = Math.floor(hours / 24)
-  return `${days} d ago`
+  return `il y a ${days} j`
 }
 
 function AlertesPage() {
@@ -266,7 +266,7 @@ function AlertesPage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-7 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
         <select
           value={filters.machine}
           onChange={(event) => setFilters((prev) => ({ ...prev, machine: event.target.value }))}
@@ -288,28 +288,6 @@ function AlertesPage() {
           <option value="Critique">Critique</option>
           <option value="Majeure">Majeure</option>
           <option value="Mineure">Mineure</option>
-        </select>
-
-        <select
-          value={filters.status}
-          onChange={(event) => setFilters((prev) => ({ ...prev, status: event.target.value }))}
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-        >
-          <option value="">Tous statuts</option>
-          <option value="open">Open</option>
-          <option value="assigned">Assigned</option>
-          <option value="acknowledged">Acknowledged</option>
-          <option value="resolved">Resolved</option>
-        </select>
-
-        <select
-          value={filters.acknowledged}
-          onChange={(event) => setFilters((prev) => ({ ...prev, acknowledged: event.target.value }))}
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-        >
-          <option value="">Acquittement: tous</option>
-          <option value="true">Acquittee</option>
-          <option value="false">Non acquittee</option>
         </select>
 
         <select
@@ -345,12 +323,12 @@ function AlertesPage() {
             <tr className="text-left text-slate-500 border-b border-slate-200">
               <th className="py-2">ID</th>
               <th className="py-2">Machine</th>
-              <th className="py-2">Defect</th>
-              <th className="py-2">Severity</th>
-              <th className="py-2">Time</th>
-              <th className="py-2">Status</th>
-              {isValidatedView && <th className="py-2">Assignee par</th>}
-              <th className="py-2">Assignee au</th>
+              <th className="py-2">Défaut</th>
+              <th className="py-2">Sévérité</th>
+              <th className="py-2">Heure</th>
+              <th className="py-2">Statut</th>
+              {isValidatedView && <th className="py-2">Assigné par</th>}
+              <th className="py-2">Assigné à</th>
               {isValidatedView && <th className="py-2">Date validation</th>}
               <th className="py-2">Actions</th>
             </tr>
@@ -399,7 +377,7 @@ function AlertesPage() {
                         className="rounded border border-slate-300 px-2 py-1"
                         onClick={(event) => event.stopPropagation()}
                       >
-                        <option value="">Non assigne</option>
+                        <option value="">Non assigné</option>
                         {techniciens.map((user) => (
                           <option key={user.id} value={user.id}>
                             {user.name}
@@ -432,7 +410,7 @@ function AlertesPage() {
                         onClick={() => onReopen(row.id)}
                         className="rounded bg-amber-600 px-3 py-1 text-xs text-white hover:bg-amber-500"
                       >
-                        Re-open
+                        Réouvrir
                       </button>
                     )}
                     {isTechnicien && (
@@ -442,7 +420,7 @@ function AlertesPage() {
                         className="rounded bg-[#16a34a] px-3 py-1 text-xs text-white hover:bg-green-700 disabled:opacity-60"
                         disabled={row.acknowledged || row.assigned_to !== currentUser?.id}
                       >
-                        {row.acknowledged ? 'Acquittee' : 'Acquitter'}
+                        {row.acknowledged ? 'Acquittée' : 'Acquitter'}
                       </button>
                     )}
                   </td>

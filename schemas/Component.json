@@ -1,0 +1,12 @@
+{
+  "Component": {
+    "id": "int",
+    "key": "string",
+    "name": "string",
+    "type": "string",
+    "plant_id": "int",
+    "enabled": "bool",
+    "created_at": "string",
+    "updated_at": "string"
+  }
+}

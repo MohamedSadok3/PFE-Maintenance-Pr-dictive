@@ -1,0 +1,17 @@
+{
+  "Alert": {
+    "id": "int",
+    "plant_id": "int",
+    "machine": "string",
+    "defect": "string",
+    "anomaly_score": "float",
+    "confidence": "float",
+    "severity": "string",
+    "status": "string",
+    "assigned_to": "int",
+    "assigned_by": "int",
+    "acknowledged": "bool",
+    "created_at": "string",
+    "resolved_at": "string"
+  }
+}

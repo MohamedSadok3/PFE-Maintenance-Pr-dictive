@@ -27,7 +27,7 @@ function timeAgo(value) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return '-'
   const diff = Math.max(0, Math.floor((Date.now() - date.getTime()) / 60000))
-  return `${diff} min ago`
+  return `il y a ${diff} min`
 }
 
 function DashboardPage() {
@@ -87,7 +87,7 @@ function DashboardPage() {
                 </div>
 
                 <div>
-                  <p className="text-sm text-slate-500">Defect score</p>
+                  <p className="text-sm text-slate-500">Score de défaut</p>
                   <p className="text-3xl font-bold" style={{ color: style.color }}>
                     {machine.anomalyScore.toFixed(1)}%
                   </p>
@@ -149,10 +149,10 @@ function DashboardPage() {
               <div key={item.id} className="rounded-lg border border-slate-100 p-3">
                 <p className="font-medium text-slate-900">{item.machine}</p>
                 <p className="text-sm text-slate-500">
-                  Technicien: {item.assigned_to ? `#${item.assigned_to}` : 'Non assigne'}
+                  Technicien : {item.assigned_to ? `#${item.assigned_to}` : 'Non assigné'}
                 </p>
                 <p className="text-xs text-slate-400 mt-1">
-                  Deadline:{' '}
+                  Échéance :{' '}
                   {item.deadline
                     ? new Date(item.deadline).toLocaleString()
                     : item.resolved_at

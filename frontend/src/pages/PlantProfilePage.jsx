@@ -21,6 +21,7 @@ function PlantProfilePage() {
     setLoading(true)
     try {
       const response = await getMyPlant()
+      
       const plant = response.data?.plant || {}
       setForm({
         name: plant.name || '',

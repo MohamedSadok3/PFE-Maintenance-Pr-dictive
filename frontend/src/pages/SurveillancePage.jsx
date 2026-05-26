@@ -101,7 +101,7 @@ function SurveillancePage() {
       {hasTabs && <div className="grid grid-cols-1 xl:grid-cols-10 gap-4">
         <div className="xl:col-span-7 space-y-4">
           <article className="rounded-xl border border-slate-200 bg-white p-4 h-[360px]">
-            <h3 className="text-base font-semibold text-slate-800 mb-3">Capteurs en direct</h3>
+            <h3 className="text-base font-semibold text-slate-800 mb-3">Capteurs en temps réel</h3>
             <ResponsiveContainer width="100%" height="90%">
               <LineChart data={chartData}>
                 <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} />
@@ -128,10 +128,10 @@ function SurveillancePage() {
               <table className="w-full text-left text-sm">
                 <thead>
                   <tr className="text-slate-500 border-b border-slate-200">
-                    <th className="py-2">Timestamp</th>
-                    <th className="py-2">Defaut</th>
+                    <th className="py-2">Horodatage</th>
+                    <th className="py-2">Défaut</th>
                     <th className="py-2">Confiance</th>
-                    <th className="py-2">Status</th>
+                    <th className="py-2">Statut</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -162,7 +162,7 @@ function SurveillancePage() {
           <article className="rounded-xl border border-slate-200 bg-white p-4">
             <h3 className="text-base font-semibold text-slate-800 mb-2">Score defaut</h3>
             <p className="text-xs text-slate-500 mb-2">
-              Modele IA actif: <span className="font-medium text-slate-700">{modelName || 'N/A'}</span>
+              Modèle IA actif : <span className="font-medium text-slate-700">{modelName || 'N/A'}</span>
             </p>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -219,10 +219,10 @@ function SurveillancePage() {
             {lastDefect ? (
               <div className="space-y-1 text-sm">
                 <p className="font-medium text-slate-900">{humanize(lastDefect.defect)}</p>
-                <p className="text-slate-600">Confiance: {lastDefect.confidence}%</p>
-                <p className="text-slate-600">Modele: {lastDefect.modelName || modelName || 'N/A'}</p>
+                <p className="text-slate-600">Confiance : {lastDefect.confidence}%</p>
+                <p className="text-slate-600">Modèle : {lastDefect.modelName || modelName || 'N/A'}</p>
                 <p className="text-slate-600">
-                  Capteurs requis:{' '}
+                  Capteurs requis :{' '}
                   {(lastDefect.requiredSensors || requiredSensors).length > 0
                     ? (lastDefect.requiredSensors || requiredSensors).map(humanize).join(', ')
                     : 'N/A'}

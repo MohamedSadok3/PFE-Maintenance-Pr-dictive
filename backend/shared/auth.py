@@ -1,0 +1,75 @@
+from datetime import datetime, timedelta, timezone
+from functools import wraps
+
+import jwt
+from flask import g, jsonify, request
+
+from .config import get_env
+
+
+JWT_SECRET = get_env("JWT_SECRET", "supersecretkey123")
+JWT_EXPIRES_HOURS = int(get_env("JWT_EXPIRES_HOURS", "8"))
+
+
+def create_token(user, expires_hours=JWT_EXPIRES_HOURS):
+    payload = {
+        "sub": str(user["id"]),
+        "email": user["email"],
+        "name": user["name"],
+        "role": user["role"],
+        "machines": user.get("machines") or [],
+        "plant_id": user.get("plant_id"),
+        "exp": datetime.now(timezone.utc) + timedelta(hours=expires_hours),
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+
+
+def decode_token(token):
+    return jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+
+
+def get_current_user():
+    return getattr(g, "current_user", None)
+
+
+def parse_bearer_token():
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        return None
+    return auth_header.split(" ", 1)[1].strip()
+
+
+def get_current_user_from_request():
+    token = parse_bearer_token()
+    if not token:
+        return None
+    try:
+        return decode_token(token)
+    except jwt.InvalidTokenError:
+        return None
+
+
+def require_auth(roles=None):
+    roles = roles or []
+
+    def decorator(func):
+        @wraps(func)
+        def wrapped(*args, **kwargs):
+            token = parse_bearer_token()
+            if not token:
+                return jsonify({"error": "Unauthorized"}), 401
+
+            try:
+                payload = decode_token(token)
+            except jwt.InvalidTokenError:
+                return jsonify({"error": "Unauthorized"}), 401
+
+            if roles and payload.get("role") not in roles:
+                return jsonify({"error": "Forbidden"}), 403
+
+            g.current_user = payload
+            return func(*args, **kwargs)
+
+        return wrapped
+
+    return decorator

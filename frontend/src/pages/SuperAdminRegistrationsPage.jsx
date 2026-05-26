@@ -2,6 +2,40 @@ import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getRegistrations, reviewRegistration } from '../services/authService'
 
+function downloadPdf(base64Data, fileName) {
+  try {
+    const byteChars = atob(base64Data)
+    const byteNumbers = new Uint8Array(byteChars.length)
+    for (let i = 0; i < byteChars.length; i++) {
+      byteNumbers[i] = byteChars.charCodeAt(i)
+    }
+    const blob = new Blob([byteNumbers], { type: 'application/pdf' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = fileName || 'document.pdf'
+    a.click()
+    URL.revokeObjectURL(url)
+  } catch {
+    toast.error('Impossible de télécharger le document.')
+  }
+}
+
+function PdfButton({ doc, label }) {
+  if (!doc?.data) {
+    return <span className="text-xs text-slate-400 italic">Non fourni</span>
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => downloadPdf(doc.data, doc.name || `${label}.pdf`)}
+      className="inline-flex items-center gap-1 rounded border border-slate-300 bg-slate-50 px-2 py-1 text-xs text-slate-700 hover:bg-slate-100 transition"
+    >
+      📄 {label}
+    </button>
+  )
+}
+
 function SuperAdminRegistrationsPage() {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
@@ -27,10 +61,10 @@ function SuperAdminRegistrationsPage() {
     setReviewingId(id)
     try {
       await reviewRegistration(id, { action })
-      toast.success(action === 'approve' ? 'Inscription approuvee' : 'Inscription rejetee')
+      toast.success(action === 'approve' ? 'Inscription approuvée' : 'Inscription rejetée')
       setRows((prev) => prev.filter((item) => item.id !== id))
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Echec traitement inscription')
+      toast.error(error.response?.data?.error || 'Échec traitement inscription')
     } finally {
       setReviewingId(null)
     }
@@ -45,32 +79,37 @@ function SuperAdminRegistrationsPage() {
 
       {!loading && rows.length > 0 && (
         <div className="overflow-auto">
-          <table className="w-full min-w-[980px] text-sm">
+          <table className="w-full min-w-[860px] text-sm">
             <thead>
               <tr className="text-left text-slate-500 border-b border-slate-200">
-                <th className="py-2">Usine</th>
-                <th className="py-2">Code</th>
-                <th className="py-2">Contact</th>
-                <th className="py-2">Admin</th>
-                <th className="py-2">Superviseur</th>
-                <th className="py-2">Technicien</th>
+                <th className="py-2 pr-3">Usine</th>
+                <th className="py-2 pr-3">Code</th>
+                <th className="py-2 pr-3">Contact</th>
+                <th className="py-2 pr-3">Administrateur</th>
+                <th className="py-2 pr-3">Documents</th>
                 <th className="py-2">Actions</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((row) => (
-                <tr key={row.id} className="border-b border-slate-100">
-                  <td className="py-2 font-medium text-slate-800">{row.plant_name}</td>
-                  <td className="py-2 text-slate-700">{row.plant_code}</td>
-                  <td className="py-2 text-slate-700">
-                    {row.contact_name}
-                    <br />
+                <tr key={row.id} className="border-b border-slate-100 align-top">
+                  <td className="py-3 pr-3 font-medium text-slate-800">{row.plant_name}</td>
+                  <td className="py-3 pr-3 text-slate-700 font-mono text-xs">{row.plant_code}</td>
+                  <td className="py-3 pr-3 text-slate-700">
+                    <p>{row.contact_name}</p>
                     <span className="text-xs text-slate-500">{row.contact_email}</span>
                   </td>
-                  <td className="py-2 text-slate-700">{row.payload?.users?.admin?.email || '-'}</td>
-                  <td className="py-2 text-slate-700">{row.payload?.users?.superviseur?.email || '-'}</td>
-                  <td className="py-2 text-slate-700">{row.payload?.users?.technicien?.email || '-'}</td>
-                  <td className="py-2">
+                  <td className="py-3 pr-3 text-slate-700">
+                    <p>{row.payload?.users?.admin?.name || '-'}</p>
+                    <span className="text-xs text-slate-500">{row.payload?.users?.admin?.email || ''}</span>
+                  </td>
+                  <td className="py-3 pr-3">
+                    <div className="flex flex-col gap-1.5">
+                      <PdfButton doc={row.payload?.documents?.patente} label="Patente" />
+                      <PdfButton doc={row.payload?.documents?.rne} label="RNE" />
+                    </div>
+                  </td>
+                  <td className="py-3">
                     <div className="flex items-center gap-2">
                       <button
                         type="button"

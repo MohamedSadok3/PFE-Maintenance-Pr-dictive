@@ -144,7 +144,7 @@ function UserModal({ open, mode, user, onClose, onSaved }) {
       <div className="w-full max-w-xl rounded-xl bg-white shadow-xl">
         <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-slate-800">
-            {mode === 'create' ? 'Ajouter un utilisateur' : 'Modifier utilisateur'}
+            {mode === 'create' ? 'Ajouter un utilisateur' : "Modifier l'utilisateur"}
           </h3>
           <button type="button" onClick={onClose} className="text-slate-500 hover:text-slate-800">
             ✕
@@ -315,11 +315,11 @@ function UtilisateursPage() {
           <thead>
             <tr className="text-left text-slate-500 border-b border-slate-200">
               <th className="py-2">Avatar</th>
-              <th className="py-2">Name</th>
+              <th className="py-2">Nom</th>
               <th className="py-2">Email</th>
-              <th className="py-2">Role</th>
+              <th className="py-2">Rôle</th>
               <th className="py-2">Machines</th>
-              <th className="py-2">Last login</th>
+              <th className="py-2">Dernière connexion</th>
               <th className="py-2">Actions</th>
             </tr>
           </thead>
@@ -343,7 +343,7 @@ function UtilisateursPage() {
                   <td className="py-3">
                     <div className="flex flex-wrap gap-1">
                       {(user.machines || []).length === 0 && (
-                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">Aucune</span>
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">Aucune machine</span>
                       )}
                       {(user.machines || []).map((machine) => (
                         <span

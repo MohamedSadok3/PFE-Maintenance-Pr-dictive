@@ -52,7 +52,7 @@ function SuperAdminPlantsPage() {
         delete next[row.id]
         return next
       })
-      toast.success('Usine supprimee avec succes')
+      toast.success('Usine supprimée avec succès')
     } catch (error) {
       toast.error(error.response?.data?.error || "Echec suppression de l'usine")
     } finally {
@@ -71,7 +71,7 @@ function SuperAdminPlantsPage() {
             <div key={row.id} className="rounded-xl border border-slate-200 p-4 space-y-3">
               <div className="grid md:grid-cols-4 gap-3 text-sm">
                 <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                  <p className="text-xs text-slate-500">Nom</p>
+                    <p className="text-xs text-slate-500">Nom de l'usine</p>
                   <p className="font-medium text-slate-800">{row.name || '-'}</p>
                 </div>
                 <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
@@ -166,7 +166,7 @@ function SuperAdminPlantsPage() {
                 disabled={deletingId === row.id}
                 className="rounded bg-red-600 px-3 py-2 text-sm text-white hover:bg-red-700 disabled:opacity-60"
               >
-                {deletingId === row.id ? 'Suppression...' : "Supprimer l'usine"}
+                {deletingId === row.id ? 'Suppression en cours...' : "Supprimer l'usine"}
               </button>
             </div>
           ))}

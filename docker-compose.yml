@@ -35,7 +35,9 @@ services:
       - smartmaintain-net
 
   auth:
-    build: ./services/auth
+    build:
+      context: .
+      dockerfile: backend/auth/Dockerfile
     restart: unless-stopped
     ports:
       - "5004:5004"
@@ -47,7 +49,9 @@ services:
       - smartmaintain-net
 
   iot:
-    build: ./services/iot
+    build:
+      context: .
+      dockerfile: backend/iot/Dockerfile
     restart: unless-stopped
     ports:
       - "5001:5001"
@@ -57,12 +61,14 @@ services:
       - redis
       - mosquitto
     volumes:
-      - ./services/iot/data:/app/data
+      - ./backend/iot/data:/app/data
     networks:
       - smartmaintain-net
 
   ml:
-    build: ./services/ml
+    build:
+      context: .
+      dockerfile: backend/ml/Dockerfile
     restart: unless-stopped
     ports:
       - "5002:5002"
@@ -74,7 +80,9 @@ services:
       - smartmaintain-net
 
   alertes:
-    build: ./services/alertes
+    build:
+      context: .
+      dockerfile: backend/alertes/Dockerfile
     restart: unless-stopped
     ports:
       - "5003:5003"
@@ -87,7 +95,9 @@ services:
       - smartmaintain-net
 
   gateway:
-    build: ./services/gateway
+    build:
+      context: .
+      dockerfile: backend/gateway/Dockerfile
     restart: unless-stopped
     ports:
       - "5000:5000"

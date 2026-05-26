@@ -6,27 +6,27 @@ import { getAlertes } from '../services/alerteService'
 import { getStoredUser } from '../utils/storage'
 
 const navItems = [
-  { label: 'Dashboard', path: '/dashboard', roles: ['admin', 'superviseur', 'technicien'] },
-  { label: 'Live Monitoring', path: '/surveillance', roles: ['admin', 'superviseur', 'technicien'] },
-  { label: 'Alerts', path: '/alertes', roles: ['admin', 'superviseur', 'technicien'] },
-  { label: 'Fine-Tuning', path: '/fine-tuning', roles: ['admin'] },
+  { label: 'Tableau de bord', path: '/dashboard', roles: ['admin', 'superviseur', 'technicien'] },
+  { label: 'Surveillance en direct', path: '/surveillance', roles: ['admin', 'superviseur', 'technicien'] },
+  { label: 'Alertes', path: '/alertes', roles: ['admin', 'superviseur', 'technicien'] },
+  { label: 'Affinage IA', path: '/fine-tuning', roles: ['admin'] },
   { label: 'Composants', path: '/composants', roles: ['admin'] },
-  { label: 'User Management', path: '/utilisateurs', roles: ['admin'] },
-  { label: 'Profil Usine', path: '/usine/profil', roles: ['admin'] },
-  { label: 'Profils Usines', path: '/superadmin/usines', roles: ['superadmin'] },
-  { label: 'Validation Usines', path: '/superadmin/inscriptions', roles: ['superadmin'] },
+  { label: 'Gestion utilisateurs', path: '/utilisateurs', roles: ['admin'] },
+  { label: "Profil de l'usine", path: '/usine/profil', roles: ['admin'] },
+  { label: 'Profils usines', path: '/superadmin/usines', roles: ['superadmin'] },
+  { label: 'Validation usines', path: '/superadmin/inscriptions', roles: ['superadmin'] },
 ]
 
 const titles = {
-  '/dashboard': 'Dashboard',
-  '/surveillance': 'Surveillance',
+  '/dashboard': 'Tableau de bord',
+  '/surveillance': 'Surveillance en direct',
   '/alertes': 'Alertes',
-  '/fine-tuning': 'Fine-Tuning',
+  '/fine-tuning': 'Affinage IA',
   '/composants': 'Composants',
-  '/utilisateurs': 'Utilisateurs',
-  '/usine/profil': 'Profil Usine',
-  '/superadmin/usines': 'Profils Usines',
-  '/superadmin/inscriptions': 'Validation Usines',
+  '/utilisateurs': 'Gestion des utilisateurs',
+  '/usine/profil': "Profil de l'usine",
+  '/superadmin/usines': 'Profils usines',
+  '/superadmin/inscriptions': 'Validation usines',
 }
 
 function Layout() {
@@ -35,7 +35,7 @@ function Layout() {
 
   const pageTitle = useMemo(() => {
     if (titles[location.pathname]) return titles[location.pathname]
-    if (location.pathname.startsWith('/alertes/')) return 'Detail alerte'
+    if (location.pathname.startsWith('/alertes/')) return "Détail de l'alerte"
     return 'SmartMaintain'
   }, [location.pathname])
 
@@ -64,8 +64,8 @@ function Layout() {
         return {
           key: `${alert.id}-unassigned`,
           alertId: alert.id,
-          title: 'Nouvelle alerte non assignee',
-          subtitle: `${alert.machine || 'Machine'} - ${alert.defect || 'Defaut detecte'}`,
+          title: 'Nouvelle alerte non assignée',
+          subtitle: `${alert.machine || 'Machine'} - ${alert.defect || 'Défaut détecté'}`,
         }
       }
 
@@ -73,7 +73,7 @@ function Layout() {
         return {
           key: `${alert.id}-validation`,
           alertId: alert.id,
-          title: 'Alerte acquittee a valider',
+          title: 'Alerte acquittée à valider',
           subtitle: `${alert.machine || 'Machine'} - ${alert.defect || 'Validation requise'}`,
         }
       }
@@ -83,8 +83,8 @@ function Layout() {
       return {
         key: `${alert.id}-assigned`,
         alertId: alert.id,
-        title: 'Nouvelle alerte assignee',
-        subtitle: `${alert.machine || 'Machine'} - ${alert.defect || 'Intervention demandee'}`,
+        title: 'Nouvelle alerte assignée',
+        subtitle: `${alert.machine || 'Machine'} - ${alert.defect || 'Intervention demandée'}`,
       }
     }
 
@@ -199,7 +199,7 @@ function Layout() {
       <aside className="w-[240px] bg-[#0f172a] text-slate-100 flex flex-col">
         <div className="px-5 py-6 border-b border-slate-700 space-y-1">
           <h1 className="text-xl font-semibold text-[#16a34a]">SmartMaintain</h1>
-          <p className="text-xs text-slate-400">Industrial AI Suite</p>
+          <p className="text-xs text-slate-400">Suite IA Industrielle</p>
         </div>
 
         <nav className="p-4 flex-1 space-y-2">
@@ -263,7 +263,7 @@ function Layout() {
                     onClick={clearNotifications}
                     className="text-xs text-slate-500 hover:text-slate-700"
                   >
-                    Marquer lu
+                    Tout marquer lu
                   </button>
                 </div>
 

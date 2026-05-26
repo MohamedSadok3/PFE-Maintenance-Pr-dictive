@@ -1,0 +1,10 @@
+{
+  "Intervention": {
+    "id": "int",
+    "alert_id": "int",
+    "technician_id": "int",
+    "deadline": "string",
+    "status": "string",
+    "created_at": "string"
+  }
+}

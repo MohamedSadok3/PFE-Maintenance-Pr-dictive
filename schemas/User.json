@@ -1,0 +1,13 @@
+{
+  "User": {
+    "id": "int",
+    "name": "string",
+    "email": "string",
+    "password_hash": "string",
+    "role": "string",
+    "plant_id": "int",
+    "machines": "list",
+    "last_login": "string",
+    "created_at": "string"
+  }
+}

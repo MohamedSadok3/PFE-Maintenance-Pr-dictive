@@ -1,0 +1,7 @@
+flask
+flask-cors
+redis
+pandas
+numpy
+python-dotenv
+pyjwt

@@ -131,12 +131,12 @@ function FineTuningPage() {
   return (
     <section className="space-y-4">
       <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-        Simulation mode: training jobs are mocked for demo purposes.
+        Mode simulation : les entraînements sont simulés à des fins de démonstration.
       </div>
 
       <article className="rounded-xl border border-slate-200 bg-white p-6 space-y-5">
         <div>
-          <p className="text-sm font-medium text-slate-700 mb-2">Upload CSV</p>
+          <p className="text-sm font-medium text-slate-700 mb-2">Importer un fichier CSV</p>
           <label className="block rounded-xl border-2 border-dashed border-slate-300 p-6 text-center cursor-pointer hover:border-[#16a34a]">
             <input
               type="file"
@@ -144,7 +144,7 @@ function FineTuningPage() {
               className="hidden"
               onChange={(event) => setFileName(event.target.files?.[0]?.name || '')}
             />
-            <p className="text-slate-600">{fileName || 'Drop CSV file or click to upload'}</p>
+            <p className="text-slate-600">{fileName || 'Déposer un fichier CSV ou cliquer pour parcourir'}</p>
           </label>
         </div>
 
@@ -165,7 +165,7 @@ function FineTuningPage() {
           </div>
 
           <div>
-            <label className="block text-sm text-slate-700 mb-1">Base model (selon type)</label>
+            <label className="block text-sm text-slate-700 mb-1">Modèle de base (selon type)</label>
             <select
               value={baseModel}
               onChange={(event) => setBaseModel(event.target.value)}
@@ -174,11 +174,11 @@ function FineTuningPage() {
               {modelOptions.map((modelName) => (
                 <option key={modelName} value={modelName}>
                   {modelName}
-                  {modelName === bestModel ? ' (best)' : ''}
+                  {modelName === bestModel ? ' (recommandé)' : ''}
                 </option>
               ))}
             </select>
-            <p className="mt-1 text-xs text-slate-500">Meilleur modele recommande: {bestModel}</p>
+            <p className="mt-1 text-xs text-slate-500">Meilleur modèle recommandé : {bestModel}</p>
           </div>
           <button
             type="button"
@@ -186,12 +186,12 @@ function FineTuningPage() {
             disabled={!fileName || isTraining}
             className="rounded-lg bg-[#16a34a] px-4 py-2 text-white disabled:opacity-60"
           >
-            {isTraining ? 'Training...' : 'Start fine-tuning'}
+            {isTraining ? 'Entraînement...' : 'Démarrer l\'affinage'}
           </button>
         </div>
 
         <div>
-          <p className="mb-2 text-sm text-slate-700">Training progress</p>
+          <p className="mb-2 text-sm text-slate-700">Progression de l'entraînement</p>
           <div className="h-3 rounded-full bg-slate-200 overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-[#16a34a] to-[#2563eb] transition-all"
@@ -216,13 +216,13 @@ function FineTuningPage() {
       </article>
 
       <article className="rounded-xl border border-slate-200 bg-white p-6">
-        <h3 className="text-lg font-semibold text-slate-900 mb-4">Model quality comparison</h3>
+        <h3 className="text-lg font-semibold text-slate-900 mb-4">Comparaison qualité du modèle</h3>
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-slate-500">
-              <th className="py-2">Metric</th>
-              <th className="py-2">Before</th>
-              <th className="py-2">After</th>
+              <th className="py-2">Métrique</th>
+              <th className="py-2">Avant</th>
+              <th className="py-2">Après</th>
             </tr>
           </thead>
           <tbody>

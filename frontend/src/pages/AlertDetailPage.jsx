@@ -74,7 +74,7 @@ function AlertDetailPage() {
       <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 p-5 text-white shadow-lg">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-wider text-slate-300">Alert detail</p>
+            <p className="text-xs uppercase tracking-wider text-slate-300">Détail alerte</p>
             <h3 className="mt-1 text-2xl font-bold">Alerte #{alert.id}</h3>
             <p className="mt-1 text-sm text-slate-300">{alert.machine || 'Machine'} - {alert.defect || 'Defaut detecte'}</p>
           </div>
@@ -85,13 +85,13 @@ function AlertDetailPage() {
 
         <div className="mt-4 flex flex-wrap gap-2">
           <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${severityStyles(alert.severity)}`}>
-            Severite: {alert.severity || '-'}
+            Sévérité : {alert.severity || '-'}
           </span>
           <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${statusStyles(alert.status)}`}>
-            Statut: {alert.status || '-'}
+            Statut : {alert.status || '-'}
           </span>
           <span className="rounded-full border border-slate-300 bg-white/10 px-3 py-1 text-xs font-semibold text-white">
-            {alert.acknowledged ? 'Acquittee' : 'Non acquittee'}
+            {alert.acknowledged ? 'Acquittée' : 'Non acquittée'}
           </span>
         </div>
       </div>
@@ -103,9 +103,9 @@ function AlertDetailPage() {
             <InfoRow label="Machine" value={alert.machine} emphasis />
             <InfoRow label="Defaut detecte" value={alert.defect} emphasis />
             <InfoRow label="Score anomalie" value={String(alert.anomaly_score ?? alert.defect_score ?? '-')} />
-            <InfoRow label="Confidence" value={String(alert.confidence ?? '-')} />
-            <InfoRow label="Assignee a" value={alert.assigned_to_name || alert.assigned_to} />
-            <InfoRow label="Assignee par" value={alert.assigned_by_name || alert.assigned_by} />
+            <InfoRow label="Confiance" value={String(alert.confidence ?? '-')} />
+            <InfoRow label="Assigné à" value={alert.assigned_to_name || alert.assigned_to} />
+            <InfoRow label="Assigné par" value={alert.assigned_by_name || alert.assigned_by} />
           </div>
         </div>
 
