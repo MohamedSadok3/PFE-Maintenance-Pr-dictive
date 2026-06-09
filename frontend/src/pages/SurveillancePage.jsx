@@ -101,6 +101,7 @@ function SurveillancePage() {
     defectHistory,
     lastDefect,
     simulationMode,
+    liveDataUnavailable,
   } = useSurveillance()
 
   const scoreColor = getScoreColor(anomalyScore)
@@ -133,7 +134,12 @@ function SurveillancePage() {
       )}
       {simulationMode && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-          Aucun flux live detecte: mesures simulees actives pour {tabs.find((t) => t.key === activeMachine)?.label}.
+          Mode développement : mesures simulées pour {tabs.find((t) => t.key === activeMachine)?.label}.
+        </div>
+      )}
+      {liveDataUnavailable && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+          Flux capteurs indisponible — les données affichées peuvent être obsolètes.
         </div>
       )}
 

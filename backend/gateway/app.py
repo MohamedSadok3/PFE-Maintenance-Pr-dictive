@@ -2,6 +2,7 @@ import eventlet
 eventlet.monkey_patch()
 
 import threading
+import time
 import requests
 import socketio
 from flask import Flask, Response, jsonify, request
@@ -186,12 +187,26 @@ def on_sensor_data(data):
 
 
 def connect_to_alertes():
-    try:
-        alertes_socket.connect(ALERTES_URL, transports=["websocket", "polling"])
-        alertes_socket.wait()
-    except Exception:
-        # Keep gateway alive even if alertes socket is temporarily unavailable.
-        pass
+    delay = 1
+    max_delay = 60
+
+    while True:
+        try:
+            if not alertes_socket.connected:
+                alertes_socket.connect(ALERTES_URL, transports=["websocket", "polling"])
+                delay = 1
+            alertes_socket.wait()
+        except Exception:
+            pass
+
+        try:
+            if alertes_socket.connected:
+                alertes_socket.disconnect()
+        except Exception:
+            pass
+
+        time.sleep(delay)
+        delay = min(delay * 2, max_delay)
 
 
 bridge_thread = threading.Thread(target=connect_to_alertes, daemon=True)

@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
 import redis
+from psycopg2 import sql
 
 from shared.config import get_env
 from shared.constants import (
@@ -29,7 +30,6 @@ from queries import (
     ALERT_SELECT_BY_ID,
     ALERT_SELECT_WITH_USERS,
     TECHNICIAN_SELECT_BY_ID,
-    ALERT_SELECT_LIST,
     ALERT_UPDATE,
     INTERVENTION_SELECT_LATEST_FOR_ALERT,
     INTERVENTION_UPDATE,
@@ -131,40 +131,54 @@ class AlertService:
         current_role = current_user.get("role")
         current_plant_id = current_user.get("plant_id")
 
-        query_filters = []
+        where_parts = []
         values = []
 
         if current_role != ROLE_SUPERADMIN:
-            query_filters.append("a.plant_id = %s")
+            where_parts.append(sql.SQL("a.plant_id = %s"))
             values.append(current_plant_id)
         if machine:
-            query_filters.append("a.machine = %s")
+            where_parts.append(sql.SQL("a.machine = %s"))
             values.append(machine)
         if severity:
-            query_filters.append("a.severity = %s")
+            where_parts.append(sql.SQL("a.severity = %s"))
             values.append(severity)
         if status:
-            query_filters.append("a.status = %s")
+            where_parts.append(sql.SQL("a.status = %s"))
             values.append(status)
         if acknowledged is not None:
             acknowledged_value = acknowledged.lower()
             if acknowledged_value not in {"true", "false"}:
                 raise ValueError("Le paramètre acknowledged doit être true ou false.")
-            query_filters.append("a.acknowledged = %s")
+            where_parts.append(sql.SQL("a.acknowledged = %s"))
             values.append(acknowledged_value == "true")
         if current_role == ROLE_TECHNICIEN:
-            query_filters.append("a.assigned_to = %s")
+            where_parts.append(sql.SQL("a.assigned_to = %s"))
             values.append(int(current_user.get("sub")))
 
-        where_clause = f"WHERE {' AND '.join(query_filters)}" if query_filters else ""
+        where_clause = (
+            sql.SQL(" WHERE {}").format(sql.SQL(" AND ").join(where_parts))
+            if where_parts
+            else sql.SQL("")
+        )
+        query = sql.SQL("""
+            SELECT a.id, a.machine, a.defect, a.anomaly_score, a.confidence, a.severity,
+                   a.plant_id, a.status, a.assigned_to, a.assigned_by, a.acknowledged,
+                   a.created_at, a.resolved_at,
+                   assigned_user.name  AS assigned_to_name,
+                   assigner_user.name  AS assigned_by_name
+            FROM alerts a
+            LEFT JOIN users assigned_user ON assigned_user.id = a.assigned_to
+            LEFT JOIN users assigner_user ON assigner_user.id = a.assigned_by
+            {where}
+            ORDER BY a.created_at DESC
+            LIMIT %s OFFSET %s
+        """).format(where=where_clause)
         values.extend([limit, offset])
 
         with get_db_connection() as conn:
             with conn.cursor() as cur:
-                cur.execute(
-                    ALERT_SELECT_LIST.format(where_clause=where_clause),
-                    tuple(values),
-                )
+                cur.execute(query, tuple(values))
                 rows = cur.fetchall()
 
         return Alert.from_rows(rows), page, limit

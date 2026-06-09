@@ -1,7 +1,9 @@
 import axios from 'axios'
 
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
-export const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || API_BASE_URL
+export const GATEWAY_URL =
+  import.meta.env.VITE_GATEWAY_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000'
+export const API_BASE_URL = GATEWAY_URL
+export const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || GATEWAY_URL
 
 const api = axios.create({
   baseURL: API_BASE_URL,

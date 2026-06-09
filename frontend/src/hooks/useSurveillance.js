@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { io } from 'socket.io-client'
 import api from '../services/api'
+import { createSocket } from '../services/socketService'
 import { getStoredUser } from '../utils/storage'
+
+const SIMULATION_ENABLED =
+  import.meta.env.VITE_ENABLE_SIMULATION === 'true' || import.meta.env.DEV
 
 const MACHINES = {
   moteur: 'Moteur',
@@ -45,6 +48,7 @@ export default function useSurveillance() {
   const [lastDefect, setLastDefect] = useState(null)
   const [defectHistory, setDefectHistory] = useState([])
   const [simulationMode, setSimulationMode] = useState(false)
+  const [liveDataUnavailable, setLiveDataUnavailable] = useState(false)
 
   const chartBuffersRef = useRef({})
   const lastLiveMessageAtRef = useRef(0)
@@ -117,7 +121,7 @@ export default function useSurveillance() {
   }, [user?.role, userMachineKey])
 
   useEffect(() => {
-    const socket = io('http://localhost:5000', { transports: ['websocket', 'polling'] })
+    const socket = createSocket()
 
     const applyPayload = (payload) => {
       if (!payload || payload.machine !== activeType) {
@@ -126,6 +130,7 @@ export default function useSurveillance() {
 
       lastLiveMessageAtRef.current = Date.now()
       setSimulationMode(false)
+      setLiveDataUnavailable(false)
 
       const sensors = payload.sensors || {}
       const timestampRaw = payload.timestamp || new Date().toISOString()
@@ -175,11 +180,21 @@ export default function useSurveillance() {
 
     const simulationInterval = setInterval(() => {
       const lastLiveAge = Date.now() - lastLiveMessageAtRef.current
+      const hasReceivedLiveData = lastLiveMessageAtRef.current > 0
+
+      if (!SIMULATION_ENABLED) {
+        setSimulationMode(false)
+        setLiveDataUnavailable(hasReceivedLiveData && lastLiveAge >= 3500)
+        return
+      }
+
       if (lastLiveAge < 3500) {
+        setLiveDataUnavailable(false)
         return
       }
 
       setSimulationMode(true)
+      setLiveDataUnavailable(false)
       const sensors = {}
 
       for (const sensor of MACHINE_SENSORS[activeType] || []) {
@@ -248,6 +263,7 @@ export default function useSurveillance() {
     setModelName('')
     setRequiredSensors([])
     setSimulationMode(false)
+    setLiveDataUnavailable(false)
     lastLiveMessageAtRef.current = 0
   }, [activeMachine, activeType])
 
@@ -276,5 +292,6 @@ export default function useSurveillance() {
     defectHistory,
     lastDefect,
     simulationMode,
+    liveDataUnavailable,
   }
 }

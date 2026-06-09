@@ -10,47 +10,39 @@ from routes.finetune import finetune_bp
 from routes.status import status_bp
 from services.ml_service import MLService
 
-app = Flask(__name__)
-CORS(app)
-
 
 def create_app():
     """Create and configure the Flask application."""
     app = Flask(__name__)
     CORS(app)
+    app.register_blueprint(ml_bp, url_prefix="/api/ml")
+    app.register_blueprint(finetune_bp, url_prefix="/api/ml/finetune")
+    app.register_blueprint(status_bp, url_prefix="/api/ml/status")
 
-    # Register blueprints
-    app.register_blueprint(ml_bp, url_prefix='/api/ml')
-    app.register_blueprint(finetune_bp, url_prefix='/api/ml/finetune')
-    app.register_blueprint(status_bp, url_prefix='/api/ml/status')
+    @app.route("/health", methods=["GET"])
+    def health():
+        ml_service = MLService()
+        return {
+            "status": "ok",
+            "service": "ml",
+            "mock_mode": ml_service.mock_ml,
+        }
 
     return app
 
 
-@app.route("/health", methods=["GET"])
-def health():
-    """Health check endpoint."""
-    ml_service = MLService()
-    return {
-        "status": "ok",
-        "service": "ml",
-        "mock_mode": ml_service.mock_ml
-    }
+app = create_app()
 
 
-def create_and_start_services(app):
+def create_and_start_services():
     """Initialize services and start background threads."""
     ml_service = MLService()
-
-    # Start Redis consumer thread
     consumer_thread = threading.Thread(target=ml_service.consume_sensor_data, daemon=True)
     consumer_thread.start()
-
     return ml_service
 
 
 if __name__ == "__main__":
-    app = create_app()
-    create_and_start_services(app)
+    create_and_start_services()
     port = int(get_env("ML_PORT", str(ML_DEFAULT_PORT)))
     app.run(host="0.0.0.0", port=port, debug=False)

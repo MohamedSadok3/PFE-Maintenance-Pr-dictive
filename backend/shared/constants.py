@@ -1,7 +1,6 @@
 """Centralized constants shared across backend services."""
 
-# Security / auth
-JWT_DEFAULT_SECRET = "supersecretkey123"
+# Security / auth — JWT_SECRET must be set via environment (never in code)
 JWT_DEFAULT_EXPIRES_HOURS = 8
 JWT_ALGORITHM = "HS256"
 
@@ -20,12 +19,12 @@ ASSIGNMENT_ALLOWED_ROLES = {ROLE_ADMIN, ROLE_SUPERVISEUR}
 REGISTRATION_REVIEW_ACTIONS = {"approve", "reject"}
 
 # Domain entities
-MACHINE_TYPES = (
+MACHINE_TYPES = [
     "moteur",
     "pompe",
     "compresseur",
     "echangeur",
-)
+]
 
 # Alerts
 ALERT_ACTION_ASSIGN = "assign"

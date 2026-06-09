@@ -30,9 +30,8 @@ class ReplayService:
 
     def replay_csv(self, machine):
         path = self.data_dir / f"{machine}.csv"
+        rows = pd.read_csv(path).to_dict(orient="records")
         while True:
-            frame = pd.read_csv(path)
-            rows = frame.to_dict(orient="records")
             for row in rows:
                 self.publish_machine_row(machine, row)
                 time.sleep(self.replay_interval_seconds)

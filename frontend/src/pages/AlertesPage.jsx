@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { io } from 'socket.io-client'
 import toast from 'react-hot-toast'
 import api from '../services/api'
+import { createSocket } from '../services/socketService'
 import { getUser } from '../services/authService'
 import {
   acknowledgeAlert,
@@ -142,7 +142,7 @@ function AlertesPage() {
   }, [isManager])
 
   useEffect(() => {
-    const socket = io('http://localhost:5000', { transports: ['websocket', 'polling'] })
+    const socket = createSocket()
     socket.on('alert:new', (incoming) => {
       setRows((prev) => [incoming, ...prev].slice(0, LIMIT))
       setFlashIds((prev) => [...prev, incoming.id])

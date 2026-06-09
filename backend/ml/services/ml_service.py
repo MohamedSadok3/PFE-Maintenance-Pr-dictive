@@ -28,7 +28,7 @@ class MLService:
             get_env("MOCK_ML", str(MOCK_ML_DEFAULT_ENABLED).lower()).lower() == "true"
         )
         self.engine = self._build_engine()
-        self.supported_models = list(MACHINE_TYPES)
+        self.supported_models = MACHINE_TYPES
         self.best_model_by_machine = dict(BEST_MODEL_BY_MACHINE)
         self.active_models = {
             machine: self.best_model_by_machine[machine]
@@ -41,6 +41,19 @@ class MLService:
             return MockMLEngine()
         return RealMLEngine()
 
+    def _build_prediction_payload(self, machine, prediction, timestamp=None):
+        return {
+            "machine": machine,
+            "defect_score": prediction["defect_score"],
+            "anomaly_score": prediction["defect_score"],
+            "defect": prediction["defect"],
+            "defect_scores": prediction.get("defect_scores", {}),
+            "confidence": prediction["confidence"],
+            "required_sensors": prediction.get("required_sensors", []),
+            "model_name": self.active_models.get(machine, self.best_model_by_machine.get(machine)),
+            "timestamp": timestamp or datetime.now(timezone.utc).isoformat(),
+        }
+
     def predict_for_machine(self, machine, sensors):
         """Make a prediction for a specific machine."""
         if machine not in self.supported_models:
@@ -48,18 +61,7 @@ class MLService:
 
         try:
             prediction = self.engine.predict(machine, sensors)
-            response = {
-                "machine": machine,
-                "defect_score": prediction["defect_score"],
-                "anomaly_score": prediction["defect_score"],
-                "defect": prediction["defect"],
-                "defect_scores": prediction.get("defect_scores", {}),
-                "confidence": prediction["confidence"],
-                "required_sensors": prediction.get("required_sensors", []),
-                "model_name": self.active_models.get(machine, self.best_model_by_machine.get(machine)),
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            }
-            return response, 200
+            return self._build_prediction_payload(machine, prediction), 200
         except Exception as e:
             return {"error": f"Prediction failed: {str(e)}"}, 500
 
@@ -113,17 +115,7 @@ class MLService:
                     continue
 
                 prediction = self.engine.predict(machine, sensors)
-                ml_payload = {
-                    "machine": machine,
-                    "defect_score": prediction["defect_score"],
-                    "anomaly_score": prediction["defect_score"],
-                    "defect": prediction["defect"],
-                    "defect_scores": prediction.get("defect_scores", {}),
-                    "confidence": prediction["confidence"],
-                    "required_sensors": prediction.get("required_sensors", []),
-                    "model_name": self.active_models.get(machine, self.best_model_by_machine.get(machine)),
-                    "timestamp": timestamp,
-                }
+                ml_payload = self._build_prediction_payload(machine, prediction, timestamp=timestamp)
                 self.redis_client.publish(REDIS_ML_PREDICTIONS_CHANNEL, json.dumps(ml_payload))
             except Exception:
                 # Keep stream consumer resilient

@@ -5,10 +5,11 @@ import jwt
 from flask import g, jsonify, request
 
 from .config import get_env
-from .constants import JWT_ALGORITHM, JWT_DEFAULT_EXPIRES_HOURS, JWT_DEFAULT_SECRET
+from .constants import JWT_ALGORITHM, JWT_DEFAULT_EXPIRES_HOURS
 
 
-JWT_SECRET = get_env("JWT_SECRET", JWT_DEFAULT_SECRET)
+# JWT_SECRET must come from the environment — no default in code.
+JWT_SECRET = get_env("JWT_SECRET", required=True)
 JWT_EXPIRES_HOURS = int(get_env("JWT_EXPIRES_HOURS", str(JWT_DEFAULT_EXPIRES_HOURS)))
 
 
@@ -51,6 +52,12 @@ def get_current_user_from_request():
 
 
 def require_auth(roles=None):
+    """Validate JWT on each downstream service route (defence in depth).
+
+    The gateway already rejects invalid tokens before proxying, but each
+    service re-validates independently so a compromised or bypassed gateway
+    cannot impersonate users on internal endpoints.
+    """
     roles = roles or []
 
     def decorator(func):
