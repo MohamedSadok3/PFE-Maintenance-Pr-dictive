@@ -3,7 +3,9 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 
 from shared.config import get_env
+from shared.constants import IOT_DEFAULT_PORT
 from routes.iot import iot_bp
+from services.config_service import ConfigService
 from services.replay_service import ReplayService
 
 app = Flask(__name__)
@@ -28,6 +30,7 @@ def health():
 
 def create_and_start_services(app):
     """Initialize services and start background threads."""
+    ConfigService().init_db()
     replay_service = ReplayService()
     replay_service.start_replay_threads()
     return replay_service
@@ -36,5 +39,5 @@ def create_and_start_services(app):
 if __name__ == "__main__":
     app = create_app()
     create_and_start_services(app)
-    port = int(get_env("IOT_PORT", "5001"))
+    port = int(get_env("IOT_PORT", str(IOT_DEFAULT_PORT)))
     app.run(host="0.0.0.0", port=port, debug=False)

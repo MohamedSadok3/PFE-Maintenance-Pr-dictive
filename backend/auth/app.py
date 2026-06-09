@@ -2,6 +2,7 @@ from flask import Flask
 from flask_cors import CORS
 
 from shared.config import get_env
+from shared.constants import AUTH_DEFAULT_PORT
 from routes.auth import auth_bp
 from routes.users import users_bp
 from routes.plants import plants_bp
@@ -34,5 +35,5 @@ _registration_service = RegistrationService()  # This will initialize the databa
 
 
 if __name__ == "__main__":
-    port = int(get_env("AUTH_PORT", "5004"))
+    port = int(get_env("AUTH_PORT", str(AUTH_DEFAULT_PORT)))
     app.run(host="0.0.0.0", port=port, debug=False)

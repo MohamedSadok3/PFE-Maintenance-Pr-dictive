@@ -8,14 +8,15 @@ import pandas as pd
 import redis
 
 from shared.config import get_env
+from shared.constants import MACHINE_TYPES, REDIS_DEFAULT_URL, REDIS_SENSOR_CHANNEL
 
 
 class ReplayService:
     """Service to replay CSV sensor data through Redis."""
 
     def __init__(self):
-        self.redis_client = redis.from_url(get_env("REDIS_URL", "redis://localhost:6379"), decode_responses=True)
-        self.channel_name = get_env("IOT_CHANNEL", "sensor_data")
+        self.redis_client = redis.from_url(get_env("REDIS_URL", REDIS_DEFAULT_URL), decode_responses=True)
+        self.channel_name = get_env("IOT_CHANNEL", REDIS_SENSOR_CHANNEL)
         self.data_dir = Path(__file__).parent.parent / "data"
         self.rows_per_file = int(get_env("IOT_ROWS_PER_FILE", 500))
         self.replay_interval_seconds = int(get_env("IOT_REPLAY_INTERVAL_SECONDS", 2))
@@ -37,7 +38,7 @@ class ReplayService:
                 time.sleep(self.replay_interval_seconds)
 
     def start_replay_threads(self):
-        for machine in ["moteur", "pompe", "compresseur", "echangeur"]:
+        for machine in MACHINE_TYPES:
             thread = threading.Thread(target=self.replay_csv, args=(machine,), daemon=True)
             thread.start()
 

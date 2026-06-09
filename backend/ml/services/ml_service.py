@@ -4,6 +4,15 @@ from datetime import datetime, timezone
 import redis
 
 from shared.config import get_env
+from shared.constants import (
+    BEST_MODEL_BY_MACHINE,
+    MACHINE_TYPES,
+    ML_DEFAULT_MOCK_JOB_ID,
+    MOCK_ML_DEFAULT_ENABLED,
+    REDIS_DEFAULT_URL,
+    REDIS_ML_PREDICTIONS_CHANNEL,
+    REDIS_SENSOR_CHANNEL,
+)
 from engines.mock_engine import MockMLEngine
 from engines.real_engine import RealMLEngine
 
@@ -13,17 +22,14 @@ class MLService:
 
     def __init__(self):
         self.redis_client = redis.from_url(
-            get_env("REDIS_URL", "redis://localhost:6379"), decode_responses=True
+            get_env("REDIS_URL", REDIS_DEFAULT_URL), decode_responses=True
         )
-        self.mock_ml = get_env("MOCK_ML", "true").lower() == "true"
+        self.mock_ml = (
+            get_env("MOCK_ML", str(MOCK_ML_DEFAULT_ENABLED).lower()).lower() == "true"
+        )
         self.engine = self._build_engine()
-        self.supported_models = ["moteur", "pompe", "compresseur", "echangeur"]
-        self.best_model_by_machine = {
-            "moteur": "LSTM-moteur-v2",
-            "pompe": "LSTM-pompe-v2",
-            "compresseur": "Transformer-compresseur-v1",
-            "echangeur": "LSTM-echangeur-v2",
-        }
+        self.supported_models = list(MACHINE_TYPES)
+        self.best_model_by_machine = dict(BEST_MODEL_BY_MACHINE)
         self.active_models = {
             machine: self.best_model_by_machine[machine]
             for machine in self.supported_models
@@ -66,7 +72,7 @@ class MLService:
         if self.mock_ml:
             self.active_models[machine] = model_name
             return {
-                "jobId": "mock-job-1",
+                "jobId": ML_DEFAULT_MOCK_JOB_ID,
                 "message": "Model updated in mock mode",
                 "machine": machine,
                 "model_name": model_name
@@ -91,7 +97,7 @@ class MLService:
     def consume_sensor_data(self):
         """Consume sensor data from Redis and publish predictions."""
         pubsub = self.redis_client.pubsub()
-        pubsub.subscribe("sensor_data")
+        pubsub.subscribe(REDIS_SENSOR_CHANNEL)
 
         for message in pubsub.listen():
             if message.get("type") != "message":
@@ -118,7 +124,7 @@ class MLService:
                     "model_name": self.active_models.get(machine, self.best_model_by_machine.get(machine)),
                     "timestamp": timestamp,
                 }
-                self.redis_client.publish("ml_predictions", json.dumps(ml_payload))
+                self.redis_client.publish(REDIS_ML_PREDICTIONS_CHANNEL, json.dumps(ml_payload))
             except Exception:
                 # Keep stream consumer resilient
                 continue

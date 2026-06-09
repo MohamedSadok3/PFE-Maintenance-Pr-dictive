@@ -23,6 +23,26 @@ AUTH_SELECT_USER_BY_ID = """
     WHERE id = %s;
 """
 
+AUTH_SELECT_USER_WITH_PASSWORD_BY_ID = """
+    SELECT id, name, email, password_hash, role, plant_id, machines, last_login, created_at
+    FROM users
+    WHERE id = %s;
+"""
+
+AUTH_UPDATE_PROFILE_RETURNING = """
+    UPDATE users
+    SET {fields}
+    WHERE id = %s
+    RETURNING id, name, email, role, plant_id, machines, last_login, created_at;
+"""
+
+AUTH_SELECT_SUPERADMINS = """
+    SELECT id, name, email
+    FROM users
+    WHERE role = 'superadmin'
+    ORDER BY id ASC;
+"""
+
 # ── Users ───────────────────────────────────────────────────────────────────
 
 # {where_clause} is built dynamically in user_service; always parameterised.

@@ -6,6 +6,7 @@ from flask_cors import CORS
 from flask_socketio import SocketIO
 
 from shared.config import get_env
+from shared.constants import ALERTES_DEFAULT_PORT
 from routes.alerts import alerts_bp
 from routes.dashboard import dashboard_bp
 from services.alert_service import AlertService
@@ -54,5 +55,5 @@ if __name__ == "__main__":
     app, socketio = create_app()
     alert_service, redis_consumer = create_and_start_services(app, socketio)
 
-    port = int(get_env("ALERTES_PORT", "5003"))
+    port = int(get_env("ALERTES_PORT", str(ALERTES_DEFAULT_PORT)))
     socketio.run(app, host="0.0.0.0", port=port, debug=False)

@@ -9,17 +9,24 @@ from flask_cors import CORS
 from flask_socketio import SocketIO
 
 from shared.config import get_env
+from shared.constants import (
+    ALERTES_SERVICE_DEFAULT_URL,
+    AUTH_SERVICE_DEFAULT_URL,
+    FRONTEND_DEFAULT_ORIGINS,
+    GATEWAY_DEFAULT_PORT,
+    IOT_SERVICE_DEFAULT_URL,
+    ML_SERVICE_DEFAULT_URL,
+)
 from shared.auth import decode_token
 
-PORT = int(get_env("GATEWAY_PORT", "5000"))
-JWT_SECRET = get_env("JWT_SECRET", "supersecretkey123")
-AUTH_URL = get_env("AUTH_URL", "http://auth:5004")
-IOT_URL = get_env("IOT_URL", "http://iot:5001")
-ML_URL = get_env("ML_URL", "http://ml:5002")
-ALERTES_URL = get_env("ALERTES_URL", "http://alertes:5003")
+PORT = int(get_env("GATEWAY_PORT", str(GATEWAY_DEFAULT_PORT)))
+AUTH_URL = get_env("AUTH_URL", AUTH_SERVICE_DEFAULT_URL)
+IOT_URL = get_env("IOT_URL", IOT_SERVICE_DEFAULT_URL)
+ML_URL = get_env("ML_URL", ML_SERVICE_DEFAULT_URL)
+ALERTES_URL = get_env("ALERTES_URL", ALERTES_SERVICE_DEFAULT_URL)
 FRONTEND_ORIGINS = [
     origin.strip()
-    for origin in get_env("FRONTEND_ORIGINS", "http://localhost:3000,http://localhost:5173").split(",")
+    for origin in get_env("FRONTEND_ORIGINS", ",".join(FRONTEND_DEFAULT_ORIGINS)).split(",")
     if origin.strip()
 ]
 

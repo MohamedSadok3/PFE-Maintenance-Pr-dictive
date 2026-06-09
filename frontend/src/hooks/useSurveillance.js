@@ -46,8 +46,15 @@ export default function useSurveillance() {
   const [defectHistory, setDefectHistory] = useState([])
   const [simulationMode, setSimulationMode] = useState(false)
 
-  const chartBufferRef = useRef([])
+  const chartBuffersRef = useRef({})
   const lastLiveMessageAtRef = useRef(0)
+
+  const getChartBuffer = (machineKey) => {
+    if (!chartBuffersRef.current[machineKey]) {
+      chartBuffersRef.current[machineKey] = []
+    }
+    return chartBuffersRef.current[machineKey]
+  }
 
   const tabs = useMemo(() => {
     if (components.length > 0) {
@@ -127,7 +134,8 @@ export default function useSurveillance() {
         ...sensors,
       }
 
-      chartBufferRef.current = [...chartBufferRef.current, chartPoint].slice(-60)
+      const buffer = getChartBuffer(activeMachine)
+      chartBuffersRef.current[activeMachine] = [...buffer, chartPoint].slice(-60)
       const score = Number(payload.defect_score ?? payload.anomaly_score ?? 0)
       const liveDefectScores = payload.defect_scores && typeof payload.defect_scores === 'object'
         ? payload.defect_scores
@@ -162,7 +170,7 @@ export default function useSurveillance() {
     socket.on('sensor:data', applyPayload)
 
     const intervalId = setInterval(() => {
-      setChartData([...chartBufferRef.current])
+      setChartData([...getChartBuffer(activeMachine)])
     }, 1000)
 
     const simulationInterval = setInterval(() => {
@@ -222,11 +230,10 @@ export default function useSurveillance() {
       clearInterval(simulationInterval)
       socket.disconnect()
     }
-  }, [activeType])
+  }, [activeType, activeMachine])
 
   useEffect(() => {
-    chartBufferRef.current = []
-    setChartData([])
+    setChartData([...getChartBuffer(activeMachine)])
     setAnomalyScore(0)
     setSensorList(
       (MACHINE_SENSORS[activeType] || []).map((sensor) => ({
@@ -242,13 +249,25 @@ export default function useSurveillance() {
     setRequiredSensors([])
     setSimulationMode(false)
     lastLiveMessageAtRef.current = 0
-  }, [activeType])
+  }, [activeMachine, activeType])
+
+  const chartSeriesBySensor = useMemo(() => {
+    const series = {}
+    for (const sensor of sensorList) {
+      series[sensor.name] = chartData.map((point) => ({
+        timestamp: point.timestamp,
+        value: typeof point[sensor.name] === 'number' ? point[sensor.name] : Number(point[sensor.name] ?? 0),
+      }))
+    }
+    return series
+  }, [chartData, sensorList])
 
   return {
     tabs,
     activeMachine,
     setActiveMachine,
     chartData,
+    chartSeriesBySensor,
     anomalyScore,
     defectScores,
     modelName,

@@ -1,8 +1,9 @@
 import bcrypt
 from psycopg2 import errors
 
+from shared.constants import ROLE_ADMIN, ROLE_SUPERADMIN, ROLE_SUPERVISEUR
 from shared.database import get_db_connection
-from shared.rows import row_to_dict, rows_to_dicts
+from models import User
 from queries import (
     USER_SELECT_LIST,
     USER_INSERT,
@@ -23,11 +24,11 @@ class UserService:
         if role:
             filters.append("role = %s")
             values.append(role)
-        if current_role in {"admin", "superviseur"}:
+        if current_role in {ROLE_ADMIN, ROLE_SUPERVISEUR}:
             filters.append("plant_id = %s")
             values.append(current_plant_id)
             filters.append("role != %s")
-            values.append("superadmin")
+            values.append(ROLE_SUPERADMIN)
         elif plant_id:
             filters.append("plant_id = %s")
             values.append(int(plant_id))
@@ -41,7 +42,7 @@ class UserService:
                     tuple(values),
                 )
                 rows = cur.fetchall()
-                return rows_to_dicts(rows)
+                return User.from_rows(rows)
 
     @staticmethod
     def create_user(name, email, password, role, plant_id, machines):
@@ -56,7 +57,7 @@ class UserService:
                         (name, email, password_hash, role, plant_id, machines),
                     )
                     row = cur.fetchone()
-                    user = row_to_dict(row)
+                    user = User.from_row(row)
                     conn.commit()
                     return user, None
                 except errors.UniqueViolation:
@@ -96,7 +97,7 @@ class UserService:
 
         with get_db_connection() as conn:
             with conn.cursor() as cur:
-                if current_role != "superadmin":
+                if current_role != ROLE_SUPERADMIN:
                     cur.execute(USER_SELECT_FOR_PLANT_CHECK, (user_id, current_plant_id))
                     if not cur.fetchone():
                         return None, "Accès refusé."
@@ -105,7 +106,7 @@ class UserService:
                     tuple(values),
                 )
                 row = cur.fetchone()
-                user = row_to_dict(row)
+                user = User.from_row(row)
                 conn.commit()
                 return user, None
 
@@ -114,7 +115,7 @@ class UserService:
         """Delete a user."""
         with get_db_connection() as conn:
             with conn.cursor() as cur:
-                if current_role == "superadmin":
+                if current_role == ROLE_SUPERADMIN:
                     cur.execute(USER_DELETE_SUPERADMIN, (user_id,))
                 else:
                     cur.execute(USER_DELETE_BY_PLANT, (user_id, current_plant_id))

@@ -1,8 +1,9 @@
 import time
 from psycopg2 import errors
 
+from shared.constants import MACHINE_TYPES, ROLE_SUPERADMIN
 from shared.database import get_db_connection
-from shared.rows import row_to_dict, rows_to_dicts
+from models import Component
 from queries import (
     COMPONENT_SELECT_LIST,
     COMPONENT_INSERT,
@@ -11,8 +12,6 @@ from queries import (
     COMPONENT_DELETE_SUPERADMIN,
     COMPONENT_DELETE_BY_PLANT,
 )
-
-COMPONENT_TYPES = {"moteur", "pompe", "compresseur", "echangeur"}
 
 
 class ComponentService:
@@ -37,12 +36,12 @@ class ComponentService:
                     tuple(values),
                 )
                 rows = cur.fetchall()
-                return rows_to_dicts(rows)
+                return Component.from_rows(rows)
 
     @staticmethod
     def create_component(name, component_type, enabled=True, current_role=None, current_plant_id=None, plant_id=None):
         """Create a new component."""
-        if component_type not in COMPONENT_TYPES:
+        if component_type not in MACHINE_TYPES:
             return None, "Invalid component type."
 
         safe_name = "".join(ch for ch in name.lower() if ch.isalnum())
@@ -50,7 +49,7 @@ class ComponentService:
             safe_name = "component"
         key = f"{safe_name}-{int(time.time())}"
 
-        if current_role == "superadmin":
+        if current_role == ROLE_SUPERADMIN:
             if not plant_id:
                 return None, "plant_id is required for superadmin component creation."
             target_plant_id = plant_id
@@ -65,7 +64,7 @@ class ComponentService:
                         (key, name, component_type, target_plant_id, enabled),
                     )
                     row = cur.fetchone()
-                    component = row_to_dict(row)
+                    component = Component.from_row(row)
                     conn.commit()
                     return component, None
                 except errors.UniqueViolation:
@@ -86,7 +85,7 @@ class ComponentService:
             values.append(name)
         if "type" in updates:
             component_type = (updates.get("type") or "").strip().lower()
-            if component_type not in COMPONENT_TYPES:
+            if component_type not in MACHINE_TYPES:
                 return None, "Invalid component type."
             fields.append("type = %s")
             values.append(component_type)
@@ -108,7 +107,7 @@ class ComponentService:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
                 try:
-                    if current_role != "superadmin":
+                    if current_role != ROLE_SUPERADMIN:
                         cur.execute(COMPONENT_SELECT_FOR_PLANT_CHECK, (component_id, current_plant_id))
                         if not cur.fetchone():
                             return None, "Component not found."
@@ -117,7 +116,7 @@ class ComponentService:
                         tuple(values),
                     )
                     row = cur.fetchone()
-                    component = row_to_dict(row)
+                    component = Component.from_row(row)
                     conn.commit()
                     return component, None
                 except errors.UniqueViolation:
@@ -129,7 +128,7 @@ class ComponentService:
         """Delete a component."""
         with get_db_connection() as conn:
             with conn.cursor() as cur:
-                if current_role == "superadmin":
+                if current_role == ROLE_SUPERADMIN:
                     cur.execute(COMPONENT_DELETE_SUPERADMIN, (component_id,))
                 else:
                     cur.execute(COMPONENT_DELETE_BY_PLANT, (component_id, current_plant_id))

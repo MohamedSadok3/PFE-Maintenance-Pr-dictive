@@ -140,8 +140,8 @@ function UserModal({ open, mode, user, onClose, onSaved }) {
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 p-4 flex items-center justify-center">
-      <div className="w-full max-w-xl rounded-xl bg-white shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4">
+      <div className="max-h-[92dvh] w-full overflow-y-auto rounded-t-xl bg-white shadow-xl sm:max-w-xl sm:rounded-xl">
         <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-slate-800">
             {mode === 'create' ? 'Ajouter un utilisateur' : "Modifier l'utilisateur"}
@@ -298,13 +298,13 @@ function UtilisateursPage() {
   }
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-5 space-y-4">
-      <div className="flex items-center justify-between">
+    <section className="rounded-xl border border-slate-200 bg-white p-4 space-y-4 sm:p-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h3 className="text-lg font-semibold text-slate-800">Utilisateurs</h3>
         <button
           type="button"
           onClick={openCreate}
-          className="rounded-lg bg-[#16a34a] px-4 py-2 text-sm text-white hover:bg-green-700"
+          className="w-full rounded-lg bg-[#16a34a] px-4 py-2 text-sm text-white hover:bg-green-700 sm:w-auto"
         >
           Ajouter
         </button>

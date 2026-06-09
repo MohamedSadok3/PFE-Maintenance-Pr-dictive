@@ -1,17 +1,20 @@
 import json
+import logging
 import threading
+
 from flask_socketio import SocketIO
 
-from shared.config import get_env
+from shared.constants import REDIS_ML_PREDICTIONS_CHANNEL
 from .alert_service import AlertService
-from .serializers import serialize_alert
+
+logger = logging.getLogger(__name__)
 
 
 class RedisConsumer:
     def __init__(self, socketio: SocketIO):
         self.socketio = socketio
         self.alert_service = AlertService()
-        self.predictions_channel = "ml_predictions"
+        self.predictions_channel = REDIS_ML_PREDICTIONS_CHANNEL
         self.consumer_thread = None
 
     def consume_predictions(self):
@@ -37,13 +40,11 @@ class RedisConsumer:
 
                 severity = self.alert_service.severity_from_score(score)
 
-                # Always emit raw prediction for live charts
                 self.socketio.emit("sensor:data", prediction)
 
                 if not severity:
                     continue
 
-                # Get plant_id from prediction or use default
                 incoming_plant_id = prediction.get("plant_id")
                 if incoming_plant_id:
                     plant_id = int(incoming_plant_id)
@@ -53,7 +54,6 @@ class RedisConsumer:
                 if not plant_id:
                     continue
 
-                # Create alert
                 alert = self.alert_service.insert_alert(
                     plant_id=plant_id,
                     machine=prediction.get("machine", "unknown"),
@@ -63,21 +63,13 @@ class RedisConsumer:
                     severity=severity,
                 )
 
-                # Emit new alert via SocketIO
-                self.socketio.emit("alert:new", serialize_alert(alert))
+                self.socketio.emit("alert:new", alert.to_dict())
 
-            except Exception as e:
-                # Log error but continue processing
-                print(f"Error processing prediction: {e}")
+            except Exception:
+                logger.exception("Error processing prediction")
                 continue
 
     def start_consumer_thread(self):
         """Start the Redis consumer thread."""
         self.consumer_thread = threading.Thread(target=self.consume_predictions, daemon=True)
         self.consumer_thread.start()
-
-    def stop_consumer_thread(self):
-        """Stop the Redis consumer thread."""
-        if self.consumer_thread and self.consumer_thread.is_alive():
-            # Note: Daemon threads will be terminated when main thread exits
-            pass

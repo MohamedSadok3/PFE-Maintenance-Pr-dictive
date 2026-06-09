@@ -2,6 +2,23 @@ import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getRegistrations, reviewRegistration } from '../services/authService'
 
+function getPayloadObject(row) {
+  if (row?.payload_data && typeof row.payload_data === 'object') {
+    return row.payload_data
+  }
+  if (row?.payload && typeof row.payload === 'object') {
+    return row.payload
+  }
+  if (typeof row?.payload === 'string') {
+    try {
+      return JSON.parse(row.payload)
+    } catch {
+      return {}
+    }
+  }
+  return {}
+}
+
 function downloadPdf(base64Data, fileName) {
   try {
     const byteChars = atob(base64Data)
@@ -71,7 +88,7 @@ function SuperAdminRegistrationsPage() {
   }
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-5 space-y-4">
+    <section className="rounded-xl border border-slate-200 bg-white p-4 space-y-4 sm:p-5">
       <h3 className="text-lg font-semibold text-slate-800">Validation inscriptions usines</h3>
 
       {loading && <p className="text-slate-500">Chargement...</p>}
@@ -93,6 +110,10 @@ function SuperAdminRegistrationsPage() {
             <tbody>
               {rows.map((row) => (
                 <tr key={row.id} className="border-b border-slate-100 align-top">
+                  {(() => {
+                    const payload = getPayloadObject(row)
+                    return (
+                      <>
                   <td className="py-3 pr-3 font-medium text-slate-800">{row.plant_name}</td>
                   <td className="py-3 pr-3 text-slate-700 font-mono text-xs">{row.plant_code}</td>
                   <td className="py-3 pr-3 text-slate-700">
@@ -100,13 +121,13 @@ function SuperAdminRegistrationsPage() {
                     <span className="text-xs text-slate-500">{row.contact_email}</span>
                   </td>
                   <td className="py-3 pr-3 text-slate-700">
-                    <p>{row.payload?.users?.admin?.name || '-'}</p>
-                    <span className="text-xs text-slate-500">{row.payload?.users?.admin?.email || ''}</span>
+                    <p>{payload?.users?.admin?.name || '-'}</p>
+                    <span className="text-xs text-slate-500">{payload?.users?.admin?.email || ''}</span>
                   </td>
                   <td className="py-3 pr-3">
                     <div className="flex flex-col gap-1.5">
-                      <PdfButton doc={row.payload?.documents?.patente} label="Patente" />
-                      <PdfButton doc={row.payload?.documents?.rne} label="RNE" />
+                      <PdfButton doc={payload?.documents?.patente} label="Patente" />
+                      <PdfButton doc={payload?.documents?.rne} label="RNE" />
                     </div>
                   </td>
                   <td className="py-3">
@@ -129,6 +150,9 @@ function SuperAdminRegistrationsPage() {
                       </button>
                     </div>
                   </td>
+                      </>
+                    )
+                  })()}
                 </tr>
               ))}
             </tbody>

@@ -14,6 +14,8 @@ import SurveillancePage from './pages/SurveillancePage'
 import SuperAdminPlantsPage from './pages/SuperAdminPlantsPage'
 import SuperAdminRegistrationsPage from './pages/SuperAdminRegistrationsPage'
 import UtilisateursPage from './pages/UtilisateursPage'
+import IoTConfigPage from './pages/IoTConfigPage'
+import ProfilePage from './pages/ProfilePage'
 
 function App() {
   return (
@@ -32,6 +34,7 @@ function App() {
         >
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/profil" element={<ProfilePage />} />
           <Route
             path="/usine/profil"
             element={
@@ -94,6 +97,14 @@ function App() {
             element={
               <RequireAuth roles={['admin']}>
                 <UtilisateursPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/iot/config"
+            element={
+              <RequireAuth roles={['admin']}>
+                <IoTConfigPage />
               </RequireAuth>
             }
           />

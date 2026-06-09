@@ -12,6 +12,9 @@ export const logout = () => {
 export const getUser = () => getStoredUser()
 export const getToken = () => getStoredToken()
 
+export const getMe = () => api.get('/api/auth/me')
+export const updateProfile = (payload) => api.patch('/api/auth/me', payload)
+
 // Plant registration flow
 export const registerPlant = (payload) => api.post('/api/auth/register-plant', payload)
 

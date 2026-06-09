@@ -120,7 +120,7 @@ function DashboardPage() {
             {(summary.recent_alerts || []).slice(0, 5).map((alert) => (
               <div
                 key={alert.id}
-                className="flex items-center justify-between rounded-lg border border-slate-100 p-3"
+                className="flex flex-col gap-2 rounded-lg border border-slate-100 p-3 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div>
                   <p className="font-medium text-slate-900">{alert.machine}</p>

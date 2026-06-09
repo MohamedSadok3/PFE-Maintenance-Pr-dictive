@@ -5,27 +5,28 @@ import jwt
 from flask import g, jsonify, request
 
 from .config import get_env
+from .constants import JWT_ALGORITHM, JWT_DEFAULT_EXPIRES_HOURS, JWT_DEFAULT_SECRET
 
 
-JWT_SECRET = get_env("JWT_SECRET", "supersecretkey123")
-JWT_EXPIRES_HOURS = int(get_env("JWT_EXPIRES_HOURS", "8"))
+JWT_SECRET = get_env("JWT_SECRET", JWT_DEFAULT_SECRET)
+JWT_EXPIRES_HOURS = int(get_env("JWT_EXPIRES_HOURS", str(JWT_DEFAULT_EXPIRES_HOURS)))
 
 
 def create_token(user, expires_hours=JWT_EXPIRES_HOURS):
     payload = {
-        "sub": str(user["id"]),
-        "email": user["email"],
-        "name": user["name"],
-        "role": user["role"],
-        "machines": user.get("machines") or [],
-        "plant_id": user.get("plant_id"),
+        "sub": str(user.id),
+        "email": user.email,
+        "name": user.name,
+        "role": user.role,
+        "machines": user.machines or [],
+        "plant_id": user.plant_id,
         "exp": datetime.now(timezone.utc) + timedelta(hours=expires_hours),
     }
-    return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 
 def decode_token(token):
-    return jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+    return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
 
 
 def get_current_user():

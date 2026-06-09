@@ -229,7 +229,7 @@ function AlertesPage() {
   }
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-5 space-y-4">
+    <section className="rounded-xl border border-slate-200 bg-white p-4 space-y-4 sm:p-5">
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
@@ -393,36 +393,38 @@ function AlertesPage() {
                       {row.validation_at ? new Date(row.validation_at).toLocaleString() : '-'}
                     </td>
                   )}
-                  <td className="py-2 space-x-2" onClick={(event) => event.stopPropagation()}>
-                    {isManager && !isValidatedView && (
-                      <button
-                        type="button"
-                        onClick={() => onResolve(row.id)}
-                        disabled={!row.acknowledged}
-                        className="rounded bg-slate-800 px-3 py-1 text-xs text-white hover:bg-slate-700"
-                      >
-                        Valider acquittement
-                      </button>
-                    )}
-                    {isManager && isValidatedView && (
-                      <button
-                        type="button"
-                        onClick={() => onReopen(row.id)}
-                        className="rounded bg-amber-600 px-3 py-1 text-xs text-white hover:bg-amber-500"
-                      >
-                        Réouvrir
-                      </button>
-                    )}
-                    {isTechnicien && (
-                      <button
-                        type="button"
-                        onClick={() => onAcknowledge(row.id)}
-                        className="rounded bg-[#16a34a] px-3 py-1 text-xs text-white hover:bg-green-700 disabled:opacity-60"
-                        disabled={row.acknowledged || row.assigned_to !== currentUser?.id}
-                      >
-                        {row.acknowledged ? 'Acquittée' : 'Acquitter'}
-                      </button>
-                    )}
+                  <td className="py-2" onClick={(event) => event.stopPropagation()}>
+                    <div className="flex flex-wrap gap-2">
+                      {isManager && !isValidatedView && (
+                        <button
+                          type="button"
+                          onClick={() => onResolve(row.id)}
+                          disabled={!row.acknowledged}
+                          className="rounded bg-slate-800 px-3 py-1 text-xs text-white hover:bg-slate-700"
+                        >
+                          Valider acquittement
+                        </button>
+                      )}
+                      {isManager && isValidatedView && (
+                        <button
+                          type="button"
+                          onClick={() => onReopen(row.id)}
+                          className="rounded bg-amber-600 px-3 py-1 text-xs text-white hover:bg-amber-500"
+                        >
+                          Réouvrir
+                        </button>
+                      )}
+                      {isTechnicien && (
+                        <button
+                          type="button"
+                          onClick={() => onAcknowledge(row.id)}
+                          className="rounded bg-[#16a34a] px-3 py-1 text-xs text-white hover:bg-green-700 disabled:opacity-60"
+                          disabled={row.acknowledged || row.assigned_to !== currentUser?.id}
+                        >
+                          {row.acknowledged ? 'Acquittée' : 'Acquitter'}
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

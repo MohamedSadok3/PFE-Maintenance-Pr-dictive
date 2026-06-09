@@ -61,7 +61,7 @@ function SuperAdminPlantsPage() {
   }
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-5 space-y-4">
+    <section className="rounded-xl border border-slate-200 bg-white p-4 space-y-4 sm:p-5">
       <h3 className="text-lg font-semibold text-slate-800">Usines (consultation + suppression)</h3>
       {loading && <p className="text-slate-500">Chargement...</p>}
 

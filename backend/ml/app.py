@@ -4,6 +4,7 @@ from flask import Flask
 from flask_cors import CORS
 
 from shared.config import get_env
+from shared.constants import ML_DEFAULT_PORT
 from routes.predict import ml_bp
 from routes.finetune import finetune_bp
 from routes.status import status_bp
@@ -51,5 +52,5 @@ def create_and_start_services(app):
 if __name__ == "__main__":
     app = create_app()
     create_and_start_services(app)
-    port = int(get_env("ML_PORT", "5002"))
+    port = int(get_env("ML_PORT", str(ML_DEFAULT_PORT)))
     app.run(host="0.0.0.0", port=port, debug=False)

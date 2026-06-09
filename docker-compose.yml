@@ -58,6 +58,7 @@ services:
     env_file:
       - .env
     depends_on:
+      - postgres
       - redis
       - mosquitto
     volumes:

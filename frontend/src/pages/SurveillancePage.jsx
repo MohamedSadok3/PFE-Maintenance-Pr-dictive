@@ -48,12 +48,51 @@ function humanize(value) {
   return (value || '').replaceAll('_', ' ')
 }
 
+const CHART_HEIGHT = 200
+
+function SensorChart({ sensor, seriesData, color }) {
+  const unit = SENSOR_UNITS[sensor.name] || ''
+
+  return (
+    <article className="rounded-xl border border-slate-200 bg-white p-4">
+      <div className="mb-2 flex items-baseline justify-between gap-2">
+        <h3 className="text-sm font-semibold text-slate-800">{sensor.label}</h3>
+        <span className="text-xs text-slate-500">
+          {Number(sensor.value).toFixed(2)}
+          {unit ? ` ${unit}` : ''}
+        </span>
+      </div>
+      <div style={{ width: '100%', height: CHART_HEIGHT }}>
+        <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
+          <LineChart data={seriesData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+            <XAxis dataKey="timestamp" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
+            <YAxis tick={{ fontSize: 10 }} width={48} />
+            <Tooltip
+              formatter={(value) => [`${Number(value).toFixed(2)}${unit ? ` ${unit}` : ''}`, sensor.label]}
+              labelFormatter={(label) => `Heure : ${label}`}
+            />
+            <Line
+              dataKey="value"
+              name={sensor.label}
+              type="monotone"
+              dot={false}
+              strokeWidth={2}
+              stroke={color}
+              isAnimationActive={false}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </article>
+  )
+}
+
 function SurveillancePage() {
   const {
     tabs,
     activeMachine,
     setActiveMachine,
-    chartData,
+    chartSeriesBySensor,
     anomalyScore,
     defectScores,
     modelName,
@@ -100,27 +139,25 @@ function SurveillancePage() {
 
       {hasTabs && <div className="grid grid-cols-1 xl:grid-cols-10 gap-4">
         <div className="xl:col-span-7 space-y-4">
-          <article className="rounded-xl border border-slate-200 bg-white p-4 h-[360px]">
-            <h3 className="text-base font-semibold text-slate-800 mb-3">Capteurs en temps réel</h3>
-            <ResponsiveContainer width="100%" height="90%">
-              <LineChart data={chartData}>
-                <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} />
-                <YAxis />
-                <Tooltip />
+          <div>
+            <h2 className="text-base font-semibold text-slate-800 mb-3">Capteurs en temps réel</h2>
+            {sensorList.length === 0 ? (
+              <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
+                Aucune mesure disponible pour cette machine.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {sensorList.map((sensor, index) => (
-                  <Line
-                    key={sensor.name}
-                    dataKey={sensor.name}
-                    type="monotone"
-                    dot={false}
-                    strokeWidth={2}
-                    stroke={SENSOR_COLORS[index % SENSOR_COLORS.length]}
-                    isAnimationActive={false}
+                  <SensorChart
+                    key={`${activeMachine}-${sensor.name}`}
+                    sensor={sensor}
+                    seriesData={chartSeriesBySensor[sensor.name] || []}
+                    color={SENSOR_COLORS[index % SENSOR_COLORS.length]}
                   />
                 ))}
-              </LineChart>
-            </ResponsiveContainer>
-          </article>
+              </div>
+            )}
+          </div>
 
           <article className="rounded-xl border border-slate-200 bg-white p-4">
             <h3 className="text-base font-semibold text-slate-800 mb-3">Historique des defauts</h3>

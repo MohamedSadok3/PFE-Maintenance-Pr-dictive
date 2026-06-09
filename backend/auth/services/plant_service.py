@@ -1,5 +1,5 @@
 from shared.database import get_db_connection
-from shared.rows import row_to_dict, rows_to_dicts
+from models import Plant, User
 from queries import (
     PLANT_SELECT_LIST,
     PLANT_SELECT_BY_ID,
@@ -23,6 +23,15 @@ from queries import (
 
 class PlantService:
     @staticmethod
+    def _extract_count(row):
+        """Handle both RealDictCursor and tuple cursor formats safely."""
+        if row is None:
+            return 0
+        if isinstance(row, dict):
+            return int(row.get("count", 0))
+        return int(row[0])
+
+    @staticmethod
     def list_plants(status=None):
         """List plants with optional status filter."""
         filters = []
@@ -39,7 +48,7 @@ class PlantService:
                     tuple(values),
                 )
                 rows = cur.fetchall()
-                return rows_to_dicts(rows)
+                return Plant.from_rows(rows)
 
     @staticmethod
     def get_plant_by_id(plant_id):
@@ -48,7 +57,7 @@ class PlantService:
             with conn.cursor() as cur:
                 cur.execute(PLANT_SELECT_BY_ID, (plant_id,))
                 row = cur.fetchone()
-                return row_to_dict(row)
+                return Plant.from_row(row)
 
     @staticmethod
     def get_my_plant(plant_id):
@@ -77,7 +86,7 @@ class PlantService:
                     tuple(values),
                 )
                 row = cur.fetchone()
-                plant = row_to_dict(row)
+                plant = Plant.from_row(row)
                 conn.commit()
                 return plant, None
 
@@ -86,30 +95,31 @@ class PlantService:
         """Get comprehensive plant overview with users and KPIs."""
         with get_db_connection() as conn:
             with conn.cursor() as cur:
-                plant = PlantService.get_plant_by_id(plant_id)
+                cur.execute(PLANT_SELECT_BY_ID, (plant_id,))
+                plant = Plant.from_row(cur.fetchone())
                 if not plant:
                     return None
 
                 cur.execute(PLANT_SELECT_USERS_FOR_OVERVIEW, (plant_id,))
                 rows = cur.fetchall()
-                users = rows_to_dicts(rows)
+                users = User.from_rows(rows)
 
                 cur.execute(PLANT_COUNT_USERS, (plant_id,))
-                users_count = cur.fetchone()[0]
+                users_count = PlantService._extract_count(cur.fetchone())
                 cur.execute(PLANT_COUNT_ADMINS, (plant_id,))
-                admins_count = cur.fetchone()[0]
+                admins_count = PlantService._extract_count(cur.fetchone())
                 cur.execute(PLANT_COUNT_SUPERVISORS, (plant_id,))
-                supervisors_count = cur.fetchone()[0]
+                supervisors_count = PlantService._extract_count(cur.fetchone())
                 cur.execute(PLANT_COUNT_TECHNICIANS, (plant_id,))
-                technicians_count = cur.fetchone()[0]
+                technicians_count = PlantService._extract_count(cur.fetchone())
                 cur.execute(PLANT_COUNT_COMPONENTS, (plant_id,))
-                components_count = cur.fetchone()[0]
+                components_count = PlantService._extract_count(cur.fetchone())
                 cur.execute(PLANT_COUNT_TOTAL_ALERTS, (plant_id,))
-                total_alerts = cur.fetchone()[0]
+                total_alerts = PlantService._extract_count(cur.fetchone())
                 cur.execute(PLANT_COUNT_OPEN_ALERTS, (plant_id,))
-                open_alerts = cur.fetchone()[0]
+                open_alerts = PlantService._extract_count(cur.fetchone())
                 cur.execute(PLANT_COUNT_RESOLVED_ALERTS, (plant_id,))
-                resolved_alerts = cur.fetchone()[0]
+                resolved_alerts = PlantService._extract_count(cur.fetchone())
 
         return {
             "plant": plant,
@@ -134,7 +144,7 @@ class PlantService:
                 plant = PlantService.get_plant_by_id(plant_id)
                 if not plant:
                     return False
-                if plant["code"] == "usine-demo":
+                if plant.code == "usine-demo":
                     return False
 
                 cur.execute(PLANT_DELETE_INTERVENTIONS, (plant_id,))

@@ -1,12 +1,18 @@
 import re
 import json
 import bcrypt
-from psycopg2 import errors
 
+from shared.constants import (
+    REGISTRATION_REVIEW_ACTIONS,
+    ROLE_ADMIN,
+    ROLE_SUPERVISEUR,
+    ROLE_TECHNICIEN,
+)
 from shared.database import get_db_connection
-from shared.rows import row_to_dict, rows_to_dicts
+from models import Plant, PlantRegistration
 from .email_service import EmailService
 from queries import (
+    AUTH_SELECT_SUPERADMINS,
     REGISTRATION_CHECK_PLANT_EXISTS,
     REGISTRATION_CHECK_PENDING_EXISTS,
     REGISTRATION_CHECK_EMAILS_TAKEN,
@@ -21,13 +27,6 @@ from queries import (
 )
 
 PLANT_CODE_PATTERN = re.compile(r"^[a-z0-9-]{3,32}$")
-
-
-def _registration_payload(registration):
-    payload = registration.get("payload") or {}
-    if isinstance(payload, str):
-        return json.loads(payload)
-    return payload
 
 
 class RegistrationService:
@@ -102,10 +101,47 @@ class RegistrationService:
                     (plant_name, plant_code, contact_name, contact_email, json.dumps(payload)),
                 )
                 row = cur.fetchone()
-                registration = row_to_dict(row)
+                registration = PlantRegistration.from_row(row)
                 conn.commit()
 
+        self._notify_after_registration_submitted(registration)
         return registration, None
+
+    def _notify_after_registration_submitted(self, registration):
+        """Contact: confirmation received. Superadmins: new request + documents."""
+        payload = registration.payload_data
+        plant_payload = payload.get("plant") or {}
+        documents_payload = payload.get("documents") or {}
+        plant_name = plant_payload.get("name") or registration.plant_name
+        plant_code = plant_payload.get("code") or registration.plant_code
+
+        contact_email = (plant_payload.get("contact_email") or registration.contact_email or "").strip().lower()
+        contact_name = (plant_payload.get("contact_name") or registration.contact_name or "").strip() or "Responsable usine"
+        if contact_email:
+            self.email_service.send_registration_received_email(
+                recipient_email=contact_email,
+                recipient_name=contact_name,
+                plant_name=plant_name,
+                plant_code=plant_code,
+            )
+
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(AUTH_SELECT_SUPERADMINS)
+                superadmin_rows = cur.fetchall()
+
+        for row in superadmin_rows:
+            superadmin_email = (row.get("email") or "").strip().lower()
+            if not superadmin_email:
+                continue
+            self.email_service.send_registration_documents_to_superadmin(
+                recipient_email=superadmin_email,
+                recipient_name=row.get("name") or "Superadmin",
+                registration_id=registration.id,
+                plant_name=plant_name,
+                plant_code=plant_code,
+                documents=documents_payload,
+            )
 
     def list_registrations(self, status="pending"):
         """List plant registrations."""
@@ -116,31 +152,31 @@ class RegistrationService:
                 else:
                     cur.execute(REGISTRATION_SELECT_BY_STATUS, (status,))
                 rows = cur.fetchall()
-                return rows_to_dicts(rows)
+                return PlantRegistration.from_rows(rows)
 
     def review_registration(self, registration_id, action, review_note, reviewer_id):
         """Approve or reject a plant registration."""
-        if action not in {"approve", "reject"}:
+        if action not in REGISTRATION_REVIEW_ACTIONS:
             return None, "L'action doit être 'approve' ou 'reject'."
 
         with get_db_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(REGISTRATION_SELECT_BY_ID, (registration_id,))
                 row = cur.fetchone()
-                registration = row_to_dict(row)
+                registration = PlantRegistration.from_row(row)
                 if not registration:
                     return None, "Inscription introuvable."
-                if registration["status"] != "pending":
+                if registration.status != "pending":
                     return None, "Cette inscription a déjà été traitée."
 
                 if action == "reject":
                     cur.execute(REGISTRATION_REJECT, (review_note, reviewer_id, registration_id))
                     row = cur.fetchone()
-                    reviewed = row_to_dict(row)
+                    reviewed = PlantRegistration.from_row(row)
                     conn.commit()
                     return reviewed, None
 
-                payload = _registration_payload(registration)
+                payload = registration.payload_data
                 plant_payload = payload.get("plant") or {}
                 users_payload = payload.get("users") or {}
                 admin_payload = users_payload.get("admin") or {}
@@ -156,9 +192,9 @@ class RegistrationService:
                     ),
                 )
                 plant_row = cur.fetchone()
-                plant = row_to_dict(plant_row)
+                plant = Plant.from_row(plant_row)
 
-                for role_key in ("admin", "superviseur", "technicien"):
+                for role_key in (ROLE_ADMIN, ROLE_SUPERVISEUR, ROLE_TECHNICIEN):
                     user_payload = users_payload.get(role_key)
                     if not user_payload:
                         continue
@@ -173,35 +209,24 @@ class RegistrationService:
                             user_payload.get("email"),
                             password_hash,
                             role_key,
-                            plant["id"],
+                            plant.id,
                             user_payload.get("machines") or [],
                         ),
                     )
 
                 cur.execute(REGISTRATION_APPROVE, (review_note, reviewer_id, registration_id))
                 row = cur.fetchone()
-                reviewed = row_to_dict(row)
+                reviewed = PlantRegistration.from_row(row)
                 conn.commit()
 
-        recipients = []
-        contact_email = plant_payload.get("contact_email")
-        if contact_email:
-            recipients.append(
-                (
-                    contact_email,
-                    plant_payload.get("contact_name") or "Responsable usine",
-                )
-            )
-        admin_email = admin_payload.get("email")
-        if admin_email and admin_email != contact_email:
-            recipients.append((admin_email, admin_payload.get("name") or "Admin usine"))
-
-        for recipient_email, recipient_name in recipients:
+        admin_email = (admin_payload.get("email") or "").strip().lower()
+        admin_name = (admin_payload.get("name") or "").strip() or "Admin usine"
+        if admin_email:
             self.email_service.send_registration_approved_email(
-                recipient_email=recipient_email,
-                recipient_name=recipient_name,
-                plant_name=plant_payload.get("name") or registration["plant_name"],
-                plant_code=plant_payload.get("code") or registration["plant_code"],
+                recipient_email=admin_email,
+                recipient_name=admin_name,
+                plant_name=plant_payload.get("name") or registration.plant_name,
+                plant_code=plant_payload.get("code") or registration.plant_code,
             )
 
         return reviewed, plant

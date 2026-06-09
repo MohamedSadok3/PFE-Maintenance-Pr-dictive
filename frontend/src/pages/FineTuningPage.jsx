@@ -134,7 +134,7 @@ function FineTuningPage() {
         Mode simulation : les entraînements sont simulés à des fins de démonstration.
       </div>
 
-      <article className="rounded-xl border border-slate-200 bg-white p-6 space-y-5">
+      <article className="rounded-xl border border-slate-200 bg-white p-4 space-y-5 sm:p-6">
         <div>
           <p className="text-sm font-medium text-slate-700 mb-2">Importer un fichier CSV</p>
           <label className="block rounded-xl border-2 border-dashed border-slate-300 p-6 text-center cursor-pointer hover:border-[#16a34a]">
@@ -201,7 +201,7 @@ function FineTuningPage() {
         </div>
       </article>
 
-      <article className="rounded-xl border border-slate-200 bg-white p-6">
+      <article className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6">
         <h3 className="text-lg font-semibold text-slate-900 mb-3">
           Mesures simulees (aleatoires) - {selectedComponent?.name || 'Composant'}
         </h3>
@@ -215,9 +215,10 @@ function FineTuningPage() {
         </div>
       </article>
 
-      <article className="rounded-xl border border-slate-200 bg-white p-6">
+      <article className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6">
         <h3 className="text-lg font-semibold text-slate-900 mb-4">Comparaison qualité du modèle</h3>
-        <table className="w-full text-left text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[280px] text-left text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-slate-500">
               <th className="py-2">Métrique</th>
@@ -235,6 +236,7 @@ function FineTuningPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </article>
     </section>
   )

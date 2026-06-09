@@ -91,7 +91,7 @@ function ComposantsPage() {
   }
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-5 space-y-5">
+    <section className="rounded-xl border border-slate-200 bg-white p-4 space-y-5 sm:p-5">
       <header className="space-y-1">
         <h3 className="text-lg font-semibold text-slate-800">Gestion des composants</h3>
         <p className="text-sm text-slate-500">

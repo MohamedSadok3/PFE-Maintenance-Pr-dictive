@@ -75,7 +75,7 @@ function AlertDetailPage() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-wider text-slate-300">Détail alerte</p>
-            <h3 className="mt-1 text-2xl font-bold">Alerte #{alert.id}</h3>
+            <h3 className="mt-1 text-xl font-bold sm:text-2xl">Alerte #{alert.id}</h3>
             <p className="mt-1 text-sm text-slate-300">{alert.machine || 'Machine'} - {alert.defect || 'Defaut detecte'}</p>
           </div>
           <Link to="/alertes" className="rounded-lg bg-white/10 px-3 py-2 text-sm text-white hover:bg-white/20">

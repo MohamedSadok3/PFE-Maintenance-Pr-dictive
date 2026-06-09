@@ -11,8 +11,10 @@ const navItems = [
   { label: 'Alertes', path: '/alertes', roles: ['admin', 'superviseur', 'technicien'] },
   { label: 'Affinage IA', path: '/fine-tuning', roles: ['admin'] },
   { label: 'Composants', path: '/composants', roles: ['admin'] },
+  { label: 'Configuration IoT', path: '/iot/config', roles: ['admin'] },
   { label: 'Gestion utilisateurs', path: '/utilisateurs', roles: ['admin'] },
   { label: "Profil de l'usine", path: '/usine/profil', roles: ['admin'] },
+  { label: 'Mon profil', path: '/profil', roles: ['admin', 'superviseur', 'technicien', 'superadmin'] },
   { label: 'Profils usines', path: '/superadmin/usines', roles: ['superadmin'] },
   { label: 'Validation usines', path: '/superadmin/inscriptions', roles: ['superadmin'] },
 ]
@@ -23,8 +25,10 @@ const titles = {
   '/alertes': 'Alertes',
   '/fine-tuning': 'Affinage IA',
   '/composants': 'Composants',
+  '/iot/config': 'Configuration IoT',
   '/utilisateurs': 'Gestion des utilisateurs',
   '/usine/profil': "Profil de l'usine",
+  '/profil': 'Mon profil',
   '/superadmin/usines': 'Profils usines',
   '/superadmin/inscriptions': 'Validation usines',
 }
@@ -32,6 +36,7 @@ const titles = {
 function Layout() {
   const location = useLocation()
   const navigate = useNavigate()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const pageTitle = useMemo(() => {
     if (titles[location.pathname]) return titles[location.pathname]
@@ -49,10 +54,28 @@ function Layout() {
   const [showNotifications, setShowNotifications] = useState(false)
   const bellRef = useRef(null)
 
+  const visibleNavItems = useMemo(
+    () => navItems.filter((item) => item.roles.includes(user.role)),
+    [user.role],
+  )
+
   const canOpenAlerts = useMemo(
     () => ['admin', 'superviseur', 'technicien'].includes(user.role),
     [user.role],
   )
+
+  useEffect(() => {
+    setSidebarOpen(false)
+  }, [location.pathname])
+
+  useEffect(() => {
+    if (!sidebarOpen) return undefined
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [sidebarOpen])
 
   const buildNotification = (alert) => {
     if (!alert) return null
@@ -195,39 +218,58 @@ function Layout() {
   }
 
   return (
-    <div className="h-screen flex">
-      <aside className="w-[240px] bg-[#0f172a] text-slate-100 flex flex-col">
-        <div className="px-5 py-6 border-b border-slate-700 space-y-1">
-          <h1 className="text-xl font-semibold text-[#16a34a]">SmartMaintain</h1>
-          <p className="text-xs text-slate-400">Suite IA Industrielle</p>
+    <div className="min-h-screen flex bg-[#e2e8f0] lg:h-screen">
+      {sidebarOpen && (
+        <button
+          type="button"
+          aria-label="Fermer le menu"
+          className="fixed inset-0 z-40 bg-slate-900/50 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex w-[min(280px,85vw)] flex-col bg-[#0f172a] text-slate-100 shadow-xl transition-transform duration-200 lg:static lg:z-auto lg:w-60 lg:min-w-[240px] lg:max-w-[240px] lg:translate-x-0 lg:shadow-none ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <div className="flex items-center justify-between border-b border-slate-700 px-4 py-5 lg:px-5 lg:py-6">
+          <div className="space-y-1">
+            <h1 className="text-lg font-semibold text-[#16a34a] sm:text-xl">SmartMaintain</h1>
+            <p className="text-xs text-slate-400">Suite IA Industrielle</p>
+          </div>
+          <button
+            type="button"
+            className="rounded-lg p-2 text-slate-300 hover:bg-slate-800 lg:hidden"
+            aria-label="Fermer le menu"
+            onClick={() => setSidebarOpen(false)}
+          >
+            ✕
+          </button>
         </div>
 
-        <nav className="p-4 flex-1 space-y-2">
-          {navItems.map((item) => {
-            const canAccess = item.roles.includes(user.role)
-            if (!canAccess) return null
-
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) =>
-                  `block rounded-lg px-4 py-2.5 transition ${
-                    isActive
-                      ? 'bg-[#16a34a] text-white shadow'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800'
-                  }`
-                }
-              >
-                {item.label}
-              </NavLink>
-            )
-          })}
+        <nav className="flex-1 space-y-1 overflow-y-auto p-3 lg:p-4">
+          {visibleNavItems.map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              onClick={() => setSidebarOpen(false)}
+              className={({ isActive }) =>
+                `block rounded-lg px-3 py-2.5 text-sm transition sm:px-4 ${
+                  isActive
+                    ? 'bg-[#16a34a] text-white shadow'
+                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                }`
+              }
+            >
+              {item.label}
+            </NavLink>
+          ))}
         </nav>
 
-        <div className="p-4 border-t border-slate-700">
-          <p className="text-sm font-medium">{user.name}</p>
-          <span className="mt-2 inline-block text-xs bg-slate-800 text-slate-200 rounded-full px-2 py-1">
+        <div className="border-t border-slate-700 p-4">
+          <p className="truncate text-sm font-medium">{user.name}</p>
+          <span className="mt-2 inline-block rounded-full bg-slate-800 px-2 py-1 text-xs text-slate-200">
             {user.role}
           </span>
           <button
@@ -240,10 +282,24 @@ function Layout() {
         </div>
       </aside>
 
-      <div className="flex-1 min-h-screen bg-[#e2e8f0]">
-        <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-slate-800">{pageTitle}</h2>
-          <div className="relative" ref={bellRef}>
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col lg:min-h-0">
+        <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 sm:h-16 sm:px-6">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <button
+              type="button"
+              className="rounded-lg border border-slate-200 p-2 text-slate-700 hover:bg-slate-50 lg:hidden"
+              aria-label="Ouvrir le menu"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <span className="sr-only">Menu</span>
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" d="M4 7h16M4 12h16M4 17h16" />
+              </svg>
+            </button>
+            <h2 className="truncate text-base font-semibold text-slate-800 sm:text-xl">{pageTitle}</h2>
+          </div>
+
+          <div className="relative shrink-0" ref={bellRef}>
             <button
               type="button"
               onClick={onBellClick}
@@ -255,8 +311,8 @@ function Layout() {
             </button>
 
             {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 rounded-xl border border-slate-200 bg-white shadow-xl z-50">
-                <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100">
+              <div className="absolute right-0 z-50 mt-2 w-[min(20rem,calc(100vw-2rem))] rounded-xl border border-slate-200 bg-white shadow-xl">
+                <div className="flex items-center justify-between border-b border-slate-100 px-3 py-2">
                   <p className="text-sm font-semibold text-slate-700">Notifications</p>
                   <button
                     type="button"
@@ -276,7 +332,7 @@ function Layout() {
                         type="button"
                         key={item.key}
                         onClick={() => openAlertDetails(item.alertId)}
-                        className="w-full text-left px-3 py-2 border-b border-slate-100 hover:bg-slate-50"
+                        className="w-full border-b border-slate-100 px-3 py-2 text-left hover:bg-slate-50"
                       >
                         <p className="text-sm font-medium text-slate-800">{item.title}</p>
                         <p className="text-xs text-slate-500">{item.subtitle}</p>
@@ -289,7 +345,7 @@ function Layout() {
           </div>
         </header>
 
-        <main className="h-[calc(100vh-64px)] overflow-y-auto p-6">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6">
           <Outlet />
         </main>
       </div>
