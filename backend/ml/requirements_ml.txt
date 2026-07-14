@@ -1,9 +1,11 @@
 flask
 flask-cors
 redis
-pandas
 numpy
+pandas
 scipy
+scikit-learn
+xgboost
+joblib
 python-dotenv
 pyjwt
-psycopg2-binary

@@ -1,0 +1,28 @@
+{
+  "model_name": "XGB-moteur-v1",
+  "classes": [
+    "Ball_007_1",
+    "Ball_014_1",
+    "Ball_021_1",
+    "IR_007_1",
+    "IR_014_1",
+    "IR_021_1",
+    "Normal_1",
+    "OR_007_6_1",
+    "OR_014_6_1",
+    "OR_021_6_1"
+  ],
+  "n_features": 9,
+  "feature_names": [
+    "max",
+    "min",
+    "mean",
+    "sd",
+    "rms",
+    "skewness",
+    "kurtosis",
+    "crest",
+    "form"
+  ],
+  "accuracy": 0.9478260869565217
+}

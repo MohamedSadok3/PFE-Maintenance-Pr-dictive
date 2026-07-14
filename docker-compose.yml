@@ -68,8 +68,8 @@ services:
 
   ml:
     build:
-      context: .
-      dockerfile: backend/ml/Dockerfile
+      context: ./backend
+      dockerfile: ml/Dockerfile
     restart: unless-stopped
     ports:
       - "5002:5002"
@@ -79,6 +79,8 @@ services:
       - redis
     networks:
       - smartmaintain-net
+    volumes:
+    - ./backend/ml/models:/app/models
 
   alertes:
     build:
