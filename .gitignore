@@ -1,5 +1,90 @@
-.env
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Environment variables
+.env
+!.env.example
+
+# Datasets (trop volumineux pour Git)
+datasets/**/*.npz
+datasets/**/*.npy
+datasets/**/*.csv
+datasets/**/*.zip
+
+# Node modules
+node_modules/
 frontend/node_modules/
+
+# Build outputs
+dist/
+build/
 frontend/dist/
+*.egg-info/
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+
+# Docker volumes
+smartmaintain_postgres_data/
+smartmaintain_redis_data/
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+
+# Kaggle
+.kaggle/
+kaggle.json
