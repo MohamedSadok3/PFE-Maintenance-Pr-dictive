@@ -2,18 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { createUser, deleteUser, getUsers, updateUser } from '../services/userService'
+import { MACHINE_OPTIONS } from '../constants/machines'
 
 const ROLE_OPTIONS = [
   { label: 'Administrateur', value: 'admin' },
   { label: 'Superviseur', value: 'superviseur' },
   { label: 'Technicien', value: 'technicien' },
-]
-
-const MACHINE_OPTIONS = [
-  { label: 'Moteur', value: 'moteur' },
-  { label: 'Pompe', value: 'pompe' },
-  { label: 'Compresseur', value: 'compresseur' },
-  { label: 'Échangeur Thermique', value: 'echangeur' },
 ]
 
 function roleLabel(role) {

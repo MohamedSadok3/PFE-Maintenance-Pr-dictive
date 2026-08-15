@@ -1,5 +1,9 @@
 import re
 import json
+import base64
+import binascii
+import secrets
+import unicodedata
 import bcrypt
 
 from shared.constants import (
@@ -26,7 +30,35 @@ from queries import (
     PLANT_INSERT_ON_APPROVE,
 )
 
-PLANT_CODE_PATTERN = re.compile(r"^[a-z0-9-]{3,32}$")
+MAX_DOCUMENT_BYTES = 5 * 1024 * 1024
+PDF_SIGNATURE = b"%PDF-"
+
+
+def _generate_plant_code(plant_name):
+    """Generate a unique internal code; it is not a user-facing field."""
+    ascii_name = unicodedata.normalize("NFKD", plant_name).encode("ascii", "ignore").decode()
+    slug = re.sub(r"[^a-z0-9]+", "-", ascii_name.lower()).strip("-") or "usine"
+    slug = slug[:23].rstrip("-")
+    if len(slug) < 3:
+        slug = f"usine-{slug}"[:23].rstrip("-")
+    return f"{slug}-{secrets.token_hex(4)}"
+
+
+def _validate_pdf_document(document, label):
+    """Validate a base64-encoded PDF without trusting browser metadata."""
+    encoded = document.get("data") if isinstance(document, dict) else None
+    filename = (document.get("name") or "").strip() if isinstance(document, dict) else ""
+    if not encoded or not filename.lower().endswith(".pdf"):
+        return f"Le document {label} doit être un fichier PDF."
+    try:
+        raw = base64.b64decode(encoded, validate=True)
+    except (ValueError, binascii.Error):
+        return f"Le document {label} est invalide."
+    if not raw.startswith(PDF_SIGNATURE):
+        return f"Le document {label} n'est pas un PDF valide."
+    if len(raw) > MAX_DOCUMENT_BYTES:
+        return f"Le document {label} dépasse la taille maximale de 5 Mo."
+    return None
 
 
 class RegistrationService:
@@ -36,32 +68,34 @@ class RegistrationService:
     def register_plant(self, plant_data, users_data, documents=None):
         """Register a new plant with initial users and optional legal documents."""
         plant_name = (plant_data.get("name") or "").strip()
-        plant_code = (plant_data.get("code") or "").strip().lower()
         contact_name = (plant_data.get("contact_name") or "").strip()
         contact_email = (plant_data.get("contact_email") or "").strip().lower()
 
-        if not all([plant_name, plant_code, contact_name, contact_email]):
+        if not all([plant_name, contact_name, contact_email]):
             return None, "Les informations de l'usine sont incomplètes."
-        if not PLANT_CODE_PATTERN.match(plant_code):
-            return None, "Le code usine doit contenir uniquement [a-z0-9-] et faire entre 3 et 32 caractères."
+        plant_code = _generate_plant_code(plant_name)
 
         admin_user = users_data.get("admin") or {}
         if not all((admin_user.get(field) or "").strip() for field in ("name", "email", "password")):
             return None, "Le compte administrateur est requis (nom, email, mot de passe)."
+        if len(admin_user.get("password", "")) < 8:
+            return None, "Le mot de passe administrateur doit contenir au moins 8 caractères."
 
         if not documents or not documents.get("patente") or not documents.get("rne"):
             return None, "Les documents Patente et RNE sont obligatoires."
 
         patente_doc = documents.get("patente") or {}
         rne_doc = documents.get("rne") or {}
-        if not patente_doc.get("data"):
-            return None, "Le document Patente est manquant ou invalide."
-        if not rne_doc.get("data"):
-            return None, "Le document RNE est manquant ou invalide."
+        for document, label in ((patente_doc, "Patente"), (rne_doc, "RNE")):
+            document_error = _validate_pdf_document(document, label)
+            if document_error:
+                return None, document_error
 
         emails = [admin_user.get("email", "").strip().lower(), contact_email]
-        if len(set(emails)) != len(emails):
-            return None, "Les adresses email doivent être distinctes dans la demande d'inscription."
+
+        password_hash = bcrypt.hashpw(
+            admin_user.get("password", "").encode("utf-8"), bcrypt.gensalt()
+        ).decode("utf-8")
 
         payload = {
             "plant": {
@@ -74,7 +108,7 @@ class RegistrationService:
                 "admin": {
                     "name": admin_user.get("name", "").strip(),
                     "email": admin_user.get("email", "").strip().lower(),
-                    "password": admin_user.get("password", ""),
+                    "password_hash": password_hash,
                     "machines": [],
                 },
             },
@@ -169,17 +203,34 @@ class RegistrationService:
                 if registration.status != "pending":
                     return None, "Cette inscription a déjà été traitée."
 
+                payload = registration.payload_data
+                users_payload = payload.get("users") or {}
+
                 if action == "reject":
-                    cur.execute(REGISTRATION_REJECT, (review_note, reviewer_id, registration_id))
+                    for user_payload in users_payload.values():
+                        if isinstance(user_payload, dict):
+                            user_payload.pop("password", None)
+                            user_payload.pop("password_hash", None)
+                    cur.execute(
+                        REGISTRATION_REJECT,
+                        (review_note, reviewer_id, json.dumps(payload), registration_id),
+                    )
                     row = cur.fetchone()
                     reviewed = PlantRegistration.from_row(row)
                     conn.commit()
                     return reviewed, None
 
-                payload = registration.payload_data
                 plant_payload = payload.get("plant") or {}
-                users_payload = payload.get("users") or {}
                 admin_payload = users_payload.get("admin") or {}
+
+                admin_password_hash = admin_payload.get("password_hash")
+                if not admin_password_hash:
+                    legacy_password = admin_payload.get("password", "")
+                    if not legacy_password:
+                        return None, "La demande ne contient pas de mot de passe administrateur valide."
+                    admin_password_hash = bcrypt.hashpw(
+                        legacy_password.encode("utf-8"), bcrypt.gensalt()
+                    ).decode("utf-8")
 
                 cur.execute(
                     PLANT_INSERT_ON_APPROVE,
@@ -198,10 +249,15 @@ class RegistrationService:
                     user_payload = users_payload.get(role_key)
                     if not user_payload:
                         continue
-                    password_hash = bcrypt.hashpw(
-                        user_payload.get("password", "").encode("utf-8"),
-                        bcrypt.gensalt(),
-                    ).decode("utf-8")
+                    # New registrations store only a bcrypt hash. Keep a
+                    # one-time compatibility path for pending legacy rows.
+                    password_hash = (
+                        admin_password_hash
+                        if role_key == ROLE_ADMIN
+                        else user_payload.get("password_hash")
+                    )
+                    if not password_hash:
+                        continue
                     cur.execute(
                         REGISTRATION_INSERT_USER,
                         (
@@ -214,7 +270,14 @@ class RegistrationService:
                         ),
                     )
 
-                cur.execute(REGISTRATION_APPROVE, (review_note, reviewer_id, registration_id))
+                for user_payload in users_payload.values():
+                    if isinstance(user_payload, dict):
+                        user_payload.pop("password", None)
+                        user_payload.pop("password_hash", None)
+                cur.execute(
+                    REGISTRATION_APPROVE,
+                    (review_note, reviewer_id, json.dumps(payload), registration_id),
+                )
                 row = cur.fetchone()
                 reviewed = PlantRegistration.from_row(row)
                 conn.commit()

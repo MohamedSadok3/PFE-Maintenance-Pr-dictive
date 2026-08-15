@@ -18,7 +18,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent / "iot"))
 sys.path.insert(0, str(Path(__file__).parent.parent / "ml"))
 sys.path.insert(0, str(Path(__file__).parent.parent / "alertes"))
-sys.path.insert(0, str(Path(__file__).parent.parent / "shared"))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import os
 os.environ.setdefault("POSTGRES_URL", "postgresql://test:test@localhost/test")
@@ -188,7 +188,7 @@ class TestRedisConsumerPlantId:
         # get_default_plant_id should NOT have been called
         alert_svc.get_default_plant_id.assert_not_called()
 
-    def test_falls_back_to_default_when_no_plant_id(self):
+    def test_missing_plant_id_is_not_assigned_to_default_plant(self):
         consumer, alert_svc = self._make_consumer()
 
         prediction = {
@@ -201,7 +201,6 @@ class TestRedisConsumerPlantId:
         }
 
         incoming_plant_id = prediction.get("plant_id")
-        plant_id = int(incoming_plant_id) if incoming_plant_id else consumer.alert_service.get_default_plant_id()
 
-        assert plant_id == 1  # default from mock
-        alert_svc.get_default_plant_id.assert_called_once()
+        assert incoming_plant_id is None
+        alert_svc.get_default_plant_id.assert_not_called()

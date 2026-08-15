@@ -2,7 +2,7 @@
 
 **Version**: 1.0  
 **Date**: 22 Juillet 2026  
-**Statut**: ✅ Production-Ready
+**Statut**: Prototype PFE en cours de validation
 
 ---
 
@@ -56,64 +56,71 @@ timeout /t 60 /nobreak
 Start-Process "http://localhost:3000"
 ```
 
-### Identifiants par défaut
+### Compte initial
 
-```
-Email:    admin@smartmaintain.com
-Password: admin123
-```
-
-⚠️ **Important**: Changer ces identifiants en production!
+Le compte superadministrateur est configuré dans `smartmaintain/.env` avec
+`SUPERADMIN_EMAIL` et `SUPERADMIN_PASSWORD`. Utilisez des valeurs uniques avant
+le premier démarrage; aucun identifiant de production n'est fourni dans Git.
 
 ---
 
 ## 📁 Structure du Projet
 
+**Note**: l'application active se trouve dans `smartmaintain/`.
+
 ```
 PFE Maintenance prédictive/
 │
-├── 📖 README.md                    # Ce fichier
-├── 📋 Cahier_des_charges.pdf       # Spécifications projet
+├── 📖 README.md                        # Ce fichier - Point d'entrée
+├── 📄 CDC_SmartMaintain_avec_UML.docx  # Cahier des charges
+├── 📄 LICENSE                          # Licence MIT
+├── 📁 .git/                            # Git repository
+├── 📄 .gitignore
 │
-├── 📁 smartmaintain/               # 🚀 Application principale
-│   ├── README.md                   # Guide installation/démarrage
-│   ├── docker-compose.yml          # Orchestration services
+├── 📁 smartmaintain/                   # 🚀 APPLICATION PRINCIPALE
+│   ├── 📖 README.md                    # Guide rapide application
+│   ├── 🐳 docker-compose.yml           # Orchestration services
+│   ├── 🔒 .env / .env.example          # Configuration
+│   ├── 📄 mosquitto.conf               # Config MQTT
 │   │
-│   ├── backend/                    # Services backend
-│   │   ├── gateway/                # API Gateway + WebSocket
-│   │   ├── auth/                   # Authentification JWT
-│   │   ├── ml/                     # Service ML (XGBoost)
-│   │   ├── iot/                    # Ingestion données capteurs
-│   │   └── alertes/                # Gestion alertes
+│   ├── 📁 backend/                     # Services backend (5 microservices)
+│   │   ├── gateway/                    # API Gateway + WebSocket (:5000)
+│   │   ├── auth/                       # Authentification JWT (:5001)
+│   │   ├── alertes/                    # Gestion alertes (:5002)
+│   │   ├── ml/                         # Service ML XGBoost (:5003)
+│   │   ├── iot/                        # Ingestion capteurs (:5004)
+│   │   ├── shared/                     # Code partagé
+│   │   ├── migrations/                 # Migrations base données
+│   │   └── tests/                      # Tests automatisés
 │   │
-│   ├── frontend/                   # Application React
+│   ├── 📁 frontend/                    # Application React
 │   │   ├── src/
-│   │   │   ├── pages/
-│   │   │   ├── components/
-│   │   │   └── hooks/
-│   │   └── dist/                   # Build production
+│   │   │   ├── pages/                  # LoginPage, DashboardPage, etc.
+│   │   │   ├── components/             # Composants réutilisables
+│   │   │   ├── hooks/                  # Custom React hooks
+│   │   │   └── services/               # API & WebSocket
+│   │   ├── public/                     # Assets statiques
+│   │   └── package.json
 │   │
-│   └── docs/                       # 📚 Documentation complète
-│       ├── 01_SETUP.md             # Installation et configuration
-│       ├── 02_DEVELOPMENT.md       # Guide développement
-│       ├── 03_TESTING.md           # Guide tests
-│       ├── 04_DEPLOYMENT.md        # Déploiement production
-│       ├── 05_TROUBLESHOOTING.md   # Résolution problèmes
-│       ├── 06_API_REFERENCE.md     # Documentation API
-│       ├── ARCHITECTURE.md         # Architecture système
-│       └── ML_GUIDE.md             # Guide Machine Learning
+│   ├── 📁 docs/                        # 📚 DOCUMENTATION CENTRALISÉE
+│   │   ├── README.md                   # Index documentation
+│   │   ├── 01_SETUP.md                 # Installation et configuration
+│   │   ├── ARCHITECTURE.md             # Architecture système complète
+│   │   ├── USE_CASES.md                # Cas d'utilisation UML
+│   │   └── ML_GUIDE.md                 # Guide Machine Learning
 │
-├── 📁 datasets/                    # Données pour ML
-│   ├── moteur/
-│   ├── pompe/
-│   ├── compresseur/
-│   └── echangeur/
+├── 📁 datasets/                        # 📊 DATASETS MACHINE LEARNING
+│   └── Datasets Mouteur electrique/    # Données moteur existantes
 │
-└── 📁 tools/                       # Outils externes
-    └── kaggle/                     # Scripts Kaggle API
+└── 📁 tools/                           # 🔧 OUTILS EXTERNES
+    ├── README.md                       # Documentation outils
+    └── kaggle/                         # Outils Kaggle API
         ├── README.md
-        ├── download_dataset.py
-        └── setup_kaggle.ps1
+        ├── setup_kaggle.ps1
+        ├── download_kaggle_data.py
+        ├── download_kaggle_dataset.py
+        ├── extract_kaggle_tokens.py
+        └── fetch_api_data.py
 ```
 
 ---
@@ -243,18 +250,13 @@ CSV → IoT Service → Redis (sensor_data)
 ### Guides Complets
 
 - **[Installation](smartmaintain/docs/01_SETUP.md)** - Configuration et installation
-- **[Développement](smartmaintain/docs/02_DEVELOPMENT.md)** - Guide développement
 - **[Machine Learning](smartmaintain/docs/ML_GUIDE.md)** - Entraînement modèles
 - **[Architecture](smartmaintain/docs/ARCHITECTURE.md)** - Architecture technique
-- **[API Reference](smartmaintain/docs/06_API_REFERENCE.md)** - Documentation API
-- **[Troubleshooting](smartmaintain/docs/05_TROUBLESHOOTING.md)** - Résolution problèmes
 
 ### Quick Links
 
 - 🚀 [Guide Rapide](smartmaintain/README.md)
 - 🐳 [Docker Setup](smartmaintain/docker-compose.yml)
-- 🧪 [Tests](smartmaintain/docs/03_TESTING.md)
-- 🚢 [Déploiement](smartmaintain/docs/04_DEPLOYMENT.md)
 
 ---
 
@@ -286,9 +288,9 @@ docker-compose up -d [service-name]
 # Tests unitaires
 docker-compose exec ml pytest
 
-# Tests E2E
+# Vérification frontend
 cd frontend
-npm run test:e2e
+npm run lint
 
 # Tests de charge
 cd tools
@@ -306,8 +308,8 @@ cd tools
 ✅ RBAC (Role-Based Access Control)  
 ✅ Validation inputs  
 ✅ CORS configuré  
-✅ Rate limiting (production)  
-✅ HTTPS/TLS (production)
+⬜ Rate limiting à configurer au niveau du reverse proxy
+⬜ HTTPS/TLS à configurer au déploiement
 
 ### Checklist Production
 
@@ -405,4 +407,4 @@ Ce projet est sous licence MIT. Voir [LICENSE](LICENSE) pour plus de détails.
 
 **Documentation**: [smartmaintain/docs/](smartmaintain/docs/)
 
-**Status**: ✅ Production-Ready | 🎯 Score: 9.0/10
+**Status**: Prototype PFE — validation d'intégration et durcissement requis avant production

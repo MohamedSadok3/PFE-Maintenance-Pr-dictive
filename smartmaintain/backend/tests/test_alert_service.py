@@ -20,9 +20,10 @@ import pytest
 
 # Allow imports from the alertes service package
 sys.path.insert(0, str(Path(__file__).parent.parent / "alertes"))
-sys.path.insert(0, str(Path(__file__).parent.parent / "shared"))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Patch database before importing service
+import shared.database
 with patch("shared.database.get_db_connection"):
     with patch("redis.from_url"):
         from services.alert_service import AlertService

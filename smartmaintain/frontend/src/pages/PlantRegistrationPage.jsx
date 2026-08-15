@@ -4,6 +4,8 @@ import toast from 'react-hot-toast'
 import { Link } from 'react-router-dom'
 import { registerPlant } from '../services/authService'
 
+const MAX_PDF_BYTES = 5 * 1024 * 1024
+
 const readFileAsBase64 = (file) =>
   new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -67,6 +69,10 @@ function PlantRegistrationPage() {
       toast.error('Le document RNE (PDF) est obligatoire.')
       return
     }
+    if ([patenteFile, rneFile].some((file) => file.size > MAX_PDF_BYTES)) {
+      toast.error('Chaque document PDF doit faire au maximum 5 Mo.')
+      return
+    }
 
     try {
       const [patenteBase64, rneBase64] = await Promise.all([
@@ -77,7 +83,6 @@ function PlantRegistrationPage() {
       const payload = {
         plant: {
           name: values.plant_name,
-          code: values.plant_code.toLowerCase(),
           contact_name: values.contact_name,
           contact_email: values.contact_email.toLowerCase(),
         },
@@ -126,11 +131,6 @@ function PlantRegistrationPage() {
                 className="rounded-lg border border-slate-300 px-3 py-2"
                 placeholder="Nom de l'usine"
                 {...register('plant_name', { required: true })}
-              />
-              <input
-                className="rounded-lg border border-slate-300 px-3 py-2"
-                placeholder="Code usine (ex: usine-tunis)"
-                {...register('plant_code', { required: true })}
               />
               <input
                 className="rounded-lg border border-slate-300 px-3 py-2"

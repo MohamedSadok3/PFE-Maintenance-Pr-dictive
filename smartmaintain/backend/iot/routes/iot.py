@@ -1,7 +1,7 @@
 from flask import Blueprint
 
 from shared.auth import get_current_user, require_auth
-from shared.constants import MACHINE_TYPES, ROLE_ADMIN
+from shared.constants import MACHINE_TYPES, ROLE_ADMIN, ROLE_SUPERADMIN
 from shared.http import get_json_body, json_error, json_response
 from services.config_service import ConfigService
 from services.replay_service import ReplayService
@@ -77,23 +77,27 @@ def test_mqtt_config():
 
 
 @iot_bp.route("/inject", methods=["POST"])
-@require_auth()
+@require_auth([ROLE_ADMIN, ROLE_SUPERADMIN])
 def inject():
     body      = get_json_body()
     machine   = body.get("machine")
     sensors   = body.get("sensors")
     timestamp = body.get("timestamp")
-    plant_id  = body.get("plant_id")
+    current_user = get_current_user()
+    plant_id = current_user.get("plant_id")
+    if current_user.get("role") == ROLE_SUPERADMIN:
+        plant_id = body.get("plant_id")
 
     if machine not in MACHINE_TYPES:
         return json_error("Invalid machine.")
     if not isinstance(sensors, dict):
         return json_error("sensors must be an object.")
+    if plant_id is None:
+        return json_error("plant_id est requis.", 400)
 
     service = ReplayService()
     # Allow caller to override the plant_id for this injection
-    if plant_id is not None:
-        service.plant_id = int(plant_id)
+    service.plant_id = int(plant_id)
 
     # Build a minimal window from the single injected row so the statistical
     # feature computation has something to work with.

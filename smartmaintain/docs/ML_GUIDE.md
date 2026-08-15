@@ -1,6 +1,82 @@
 # Guide Machine Learning - SmartMaintain
 
-**Dernière mise à jour**: 22 Juillet 2026
+**Dernière mise à jour**: 29 Juillet 2026
+
+---
+
+## 🚀 Quick Start (5 Minutes)
+
+### Statut Actuel
+✅ Les 4 modèles sont entraînés avec des **données synthétiques** et fonctionnels
+⏳ Prêts à être réentraînés avec des **datasets réels** pour la production
+
+### Formation Rapide d'un Modèle
+
+**1. Obtenir Token Kaggle API (1 min)**
+1. Aller sur https://www.kaggle.com/settings
+2. Cliquer "Create New API Token"
+3. Télécharger `kaggle.json`
+
+**2. Entraîner Modèle POMPE (10 min)**
+```bash
+# 1. Ouvrir Google Colab
+# 2. Upload: backend/ml/models/notebooks/train_pompe_colab.ipynb
+# 3. Runtime → Run all
+# 4. Upload kaggle.json quand demandé
+# 5. Attendre fin entraînement (5-10 min)
+# 6. Télécharger 4 fichiers: pompe_xgb.pkl, pompe_scaler.pkl,
+#    pompe_label_encoder.pkl, pompe_metadata.json
+```
+
+**3. Copier Fichiers dans Projet (1 min)**
+```bash
+cp ~/Downloads/pompe_*.pkl "smartmaintain/backend/ml/models/trained/"
+cp ~/Downloads/pompe_*.json "smartmaintain/backend/ml/models/trained/"
+```
+
+**4. Redémarrer Service ML (1 min)**
+```bash
+cd smartmaintain
+docker-compose restart ml
+```
+
+**5. Tester (1 min)**
+```bash
+docker-compose exec ml python -c "
+from engines.real_engine import RealMLEngine
+engine = RealMLEngine()
+result = engine.predict('pompe', {'vibration': 0.8, 'pressure_in': 4.5})
+print(f'Défaut: {result[\"defect\"]} (confidence: {result[\"confidence\"]:.0%})')
+"
+```
+
+### Datasets Disponibles
+
+| Machine | Dataset | Source |
+|---------|---------|--------|
+| **Moteur** | CWRU Bearing | Inclus dans projet |
+| **Pompe** | Pump Sensor Data | [Kaggle](https://www.kaggle.com/datasets/nphantawee/pump-sensor-data) |
+| **Compresseur** | Compressor Data | [Kaggle](https://www.kaggle.com/datasets/pythonkumar/compressor-data) |
+| **Échangeur** | Synthétique | Généré (pas de download) |
+
+### Vérification Installation
+
+```bash
+docker-compose exec ml python -c "
+from services.ml_service import MLService
+svc = MLService()
+print('✅ Mock mode:', svc.mock_ml, '(doit être False)')
+print('✅ Engine:', type(svc.engine).__name__, '(doit être RealMLEngine)')
+print('✅ Modèles chargés:', list(svc.engine.models.keys()))
+"
+```
+
+**Sortie attendue**:
+```
+✅ Mock mode: False (doit être False)
+✅ Engine: RealMLEngine (doit être RealMLEngine)
+✅ Modèles chargés: ['moteur', 'pompe', 'compresseur', 'echangeur']
+```
 
 ---
 

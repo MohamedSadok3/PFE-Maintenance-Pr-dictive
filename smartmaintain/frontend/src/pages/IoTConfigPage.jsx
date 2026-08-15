@@ -1,15 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
-import { io } from 'socket.io-client'
-import { SOCKET_URL } from '../services/api'
 import { getIoTConfig, saveIoTConfig, testMqttConnection } from '../services/iotService'
-
-const MACHINE_LABELS = {
-  moteur: 'Moteur',
-  pompe: 'Pompe',
-  compresseur: 'Compresseur',
-  echangeur: 'Échangeur',
-}
+import { connectSocket } from '../services/socketService'
+import { MACHINE_LABELS } from '../constants/machines'
 
 const ONLINE_THRESHOLD_MS = 5000
 
@@ -60,7 +53,7 @@ function IoTConfigPage() {
   }, [])
 
   useEffect(() => {
-    const socket = io(SOCKET_URL, { transports: ['websocket', 'polling'] })
+    const socket = connectSocket()
 
     const onSensorData = (payload) => {
       if (!payload?.machine) return
@@ -92,7 +85,7 @@ function IoTConfigPage() {
 
     return () => {
       window.clearInterval(intervalId)
-      socket.disconnect()
+      socket.off('sensor:data', onSensorData)
     }
   }, [])
 

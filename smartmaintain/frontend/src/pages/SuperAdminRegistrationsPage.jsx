@@ -100,7 +100,6 @@ function SuperAdminRegistrationsPage() {
             <thead>
               <tr className="text-left text-slate-500 border-b border-slate-200">
                 <th className="py-2 pr-3">Usine</th>
-                <th className="py-2 pr-3">Code</th>
                 <th className="py-2 pr-3">Contact</th>
                 <th className="py-2 pr-3">Administrateur</th>
                 <th className="py-2 pr-3">Documents</th>
@@ -115,7 +114,6 @@ function SuperAdminRegistrationsPage() {
                     return (
                       <>
                   <td className="py-3 pr-3 font-medium text-slate-800">{row.plant_name}</td>
-                  <td className="py-3 pr-3 text-slate-700 font-mono text-xs">{row.plant_code}</td>
                   <td className="py-3 pr-3 text-slate-700">
                     <p>{row.contact_name}</p>
                     <span className="text-xs text-slate-500">{row.contact_email}</span>

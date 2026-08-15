@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import api from '../services/api'
-import { getSocket } from '../services/socketService'
+import { connectSocket } from '../services/socketService'
 import { getStoredUser } from '../utils/storage'
 
 const SIMULATION_ENABLED =
@@ -48,11 +48,6 @@ function defaultSensorList(machineType) {
 
 export default function useSurveillance() {
   const user = useMemo(() => getStoredUser(), [])
-  const userMachineKey = useMemo(
-    () => (Array.isArray(user?.machines) ? user.machines.join('|') : ''),
-    [user?.machines],
-  )
-
   const [components, setComponents] = useState([])
   const [activeMachine, setActiveMachine] = useState('moteur')
   const [anomalyScore, setAnomalyScore] = useState(0)
@@ -147,7 +142,7 @@ export default function useSurveillance() {
     return () => {
       mounted = false
     }
-  }, [user?.role, userMachineKey])
+  }, [user?.machines, user?.role])
 
   // ── Reset state when active machine changes ────────────────────────────────
 
@@ -239,7 +234,7 @@ export default function useSurveillance() {
   // ── Socket subscription ────────────────────────────────────────────────────
 
   useEffect(() => {
-    const socket = getSocket()
+    const socket = connectSocket()
 
     const onConnect = () => setLiveDataUnavailable(false)
     const onConnectError = () => setLiveDataUnavailable(true)
@@ -250,11 +245,6 @@ export default function useSurveillance() {
     socket.on('connect_error', onConnectError)
     socket.on('disconnect', onDisconnect)
     socket.on('sensor:data', onSensorData)
-
-    // Connect if not already connected
-    if (!socket.connected) {
-      socket.connect()
-    }
 
     // Ticker: flush the buffer ref into React state so charts re-render
     const chartTicker = setInterval(() => {

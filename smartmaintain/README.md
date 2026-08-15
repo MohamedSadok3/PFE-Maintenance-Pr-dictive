@@ -25,7 +25,7 @@ docker-compose up -d
 Start-Process "http://localhost:3000"
 ```
 
-**Identifiants**: `admin@smartmaintain.com` / `admin123`
+**Compte initial**: défini par `SUPERADMIN_EMAIL` et `SUPERADMIN_PASSWORD` dans `.env`.
 
 ---
 
@@ -35,12 +35,12 @@ Start-Process "http://localhost:3000"
 |---------|-----|-------------|
 | **Frontend** | http://localhost:3000 | Interface React |
 | **API Gateway** | http://localhost:5000 | API principale |
-| **Auth Service** | http://localhost:5001 | Authentification |
-| **Alertes** | http://localhost:5002 | Gestion alertes |
-| **ML Service** | http://localhost:5003 | Prédictions ML |
-| **IoT Service** | http://localhost:5004 | Ingestion données |
-| **PostgreSQL** | localhost:5432 | Base de données |
-| **Redis** | localhost:6379 | Pub/Sub + Cache |
+| **Auth Service** | réseau Docker uniquement | Authentification |
+| **Alertes** | réseau Docker uniquement | Gestion alertes |
+| **ML Service** | réseau Docker uniquement | Prédictions ML |
+| **IoT Service** | réseau Docker uniquement | Ingestion données |
+| **PostgreSQL** | réseau Docker uniquement | Base de données |
+| **Redis** | réseau Docker uniquement | Pub/Sub + Cache |
 
 ---
 
@@ -130,10 +130,9 @@ docker-compose exec -T postgres psql -U postgres smartmaintain < backup.sql
 ```bash
 # Vérifier tous les services
 curl http://localhost:5000/health  # Gateway
-curl http://localhost:5001/health  # Auth
-curl http://localhost:5002/health  # Alertes
-curl http://localhost:5003/health  # ML
-curl http://localhost:5004/health  # IoT
+docker compose exec auth python -c "import urllib.request; print(urllib.request.urlopen('http://localhost:5004/health').read())"
+docker compose exec alertes python -c "import urllib.request; print(urllib.request.urlopen('http://localhost:5003/health').read())"
+docker compose exec iot python -c "import urllib.request; print(urllib.request.urlopen('http://localhost:5001/health').read())"
 ```
 
 **Attendu**: Tous retournent `{"status": "ok"}`
@@ -180,6 +179,7 @@ smartmaintain/
 │   ├── ml/              # XGBoost Models
 │   ├── iot/             # CSV Replay + Features
 │   ├── alertes/         # Alertes System
+│   ├── migrations/      # Schéma PostgreSQL versionné
 │   └── shared/          # Constantes partagées
 │
 ├── frontend/
@@ -189,7 +189,6 @@ smartmaintain/
 │       ├── hooks/       # useSurveillance, useWebSocket
 │       └── services/    # api.js, socketService.js
 │
-├── data/                # CSV machines
 ├── docs/                # Documentation
 └── docker-compose.yml   # Orchestration
 ```
@@ -201,11 +200,6 @@ smartmaintain/
 ### Guides Complets
 
 - **[01_SETUP.md](docs/01_SETUP.md)** - Installation détaillée
-- **[02_DEVELOPMENT.md](docs/02_DEVELOPMENT.md)** - Guide développement
-- **[03_TESTING.md](docs/03_TESTING.md)** - Tests
-- **[04_DEPLOYMENT.md](docs/04_DEPLOYMENT.md)** - Production
-- **[05_TROUBLESHOOTING.md](docs/05_TROUBLESHOOTING.md)** - Problèmes courants
-- **[06_API_REFERENCE.md](docs/06_API_REFERENCE.md)** - API
 - **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Architecture
 - **[ML_GUIDE.md](docs/ML_GUIDE.md)** - Machine Learning
 
@@ -214,7 +208,6 @@ smartmaintain/
 📖 [Guide Installation](docs/01_SETUP.md)  
 🧠 [Guide ML](docs/ML_GUIDE.md)  
 🏗️ [Architecture](docs/ARCHITECTURE.md)  
-🐛 [Troubleshooting](docs/05_TROUBLESHOOTING.md)
 
 ---
 
@@ -270,7 +263,7 @@ docker-compose ps
 # 2. Tester API
 curl http://localhost:5000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@smartmaintain.com","password":"admin123"}'
+  -d '{"email":"<SUPERADMIN_EMAIL>","password":"<SUPERADMIN_PASSWORD>"}'
 
 # 3. Ouvrir frontend
 Start-Process "http://localhost:3000"
@@ -333,8 +326,8 @@ npm run dev
 # Build production
 npm run build
 
-# Tests
-npm run test
+# Vérifications statiques
+npm run lint
 ```
 
 ---
@@ -379,7 +372,7 @@ docker system df
 - [ ] Configurer backup automatique
 - [ ] Monitoring actif
 
-Voir [docs/04_DEPLOYMENT.md](docs/04_DEPLOYMENT.md) pour détails.
+Ces éléments doivent être terminés avant tout déploiement public.
 
 ---
 
@@ -391,7 +384,7 @@ Voir [docs/04_DEPLOYMENT.md](docs/04_DEPLOYMENT.md) pour détails.
 
 ### Support
 - Email: support@smartmaintain.com
-- Documentation: [docs/05_TROUBLESHOOTING.md](docs/05_TROUBLESHOOTING.md)
+- Documentation: [docs/README.md](docs/README.md)
 
 ---
 
@@ -409,6 +402,6 @@ Après installation:
 
 **Version**: 1.0  
 **Date**: 22 Juillet 2026  
-**Status**: ✅ Production-Ready
+**Status**: Prototype PFE — non destiné à la production sans durcissement complémentaire
 
 **Démarrage**: `docker-compose up -d` 🚀

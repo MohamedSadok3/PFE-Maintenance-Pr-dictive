@@ -387,7 +387,7 @@ Voir `docs/04_DEPLOYMENT.md` pour plus de détails.
 - **Documentation complète**: `docs/`
 - **Architecture**: `docs/ARCHITECTURE.md`
 - **Développement**: `docs/02_DEVELOPMENT.md`
-- **Troubleshooting**: `docs/05_TROUBLESHOOTING.md`
+- **Dépannage**: consulter les contrôles de santé et les logs décrits dans ce guide.
 
 ---
 

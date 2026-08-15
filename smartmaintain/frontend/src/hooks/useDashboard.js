@@ -1,17 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getDashboardSummary } from '../services/dashboardService'
 import { getComponents } from '../services/componentService'
-import { getSocket } from '../services/socketService'
+import { connectSocket } from '../services/socketService'
 import { getStoredUser } from '../utils/storage'
-
-const MACHINE_KEYS = ['moteur', 'pompe', 'compresseur', 'echangeur']
-
-const machineLabel = {
-  moteur: 'Moteur',
-  pompe: 'Pompe',
-  compresseur: 'Compresseur',
-  echangeur: 'Echangeur',
-}
+import { MACHINE_KEYS, MACHINE_LABELS } from '../constants/machines'
 
 function createSeedSparkline() {
   const now = Date.now()
@@ -24,10 +16,6 @@ function createSeedSparkline() {
 
 export default function useDashboard() {
   const user = useMemo(() => getStoredUser(), [])
-  const userMachineKey = useMemo(
-    () => (Array.isArray(user?.machines) ? user.machines.join('|') : ''),
-    [user?.machines],
-  )
   const [components, setComponents] = useState([])
 
   const [summary, setSummary] = useState({
@@ -42,12 +30,12 @@ export default function useDashboard() {
   const visibleComponents = useMemo(() => {
     const list = components.length
       ? components
-      : MACHINE_KEYS.map((machine) => ({ key: machine, name: machineLabel[machine], type: machine, enabled: true }))
+      : MACHINE_KEYS.map((machine) => ({ key: machine, name: MACHINE_LABELS[machine], type: machine, enabled: true }))
     if (user?.role === 'technicien' && Array.isArray(user?.machines) && user.machines.length > 0) {
       return list.filter((component) => user.machines.includes(component.type))
     }
     return list
-  }, [components, user?.role, userMachineKey])
+  }, [components, user?.machines, user?.role])
 
   useEffect(() => {
     let mounted = true
@@ -60,7 +48,7 @@ export default function useDashboard() {
         }
       } catch {
         if (mounted) {
-          setComponents(MACHINE_KEYS.map((machine) => ({ key: machine, name: machineLabel[machine], type: machine })))
+          setComponents(MACHINE_KEYS.map((machine) => ({ key: machine, name: MACHINE_LABELS[machine], type: machine })))
         }
       }
     }
@@ -72,6 +60,8 @@ export default function useDashboard() {
 
   useEffect(() => {
     const seed = createSeedSparkline()
+    // Reconcile the real-time state when the configured component list changes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMachines((prev) => {
       const next = { ...prev }
       visibleComponents.forEach((component) => {
@@ -113,10 +103,7 @@ export default function useDashboard() {
     fetchSummary()
     const intervalId = setInterval(fetchSummary, 30000)
 
-    const socket = getSocket()
-    if (!socket.connected) {
-      socket.connect()
-    }
+    const socket = connectSocket()
 
     const onAlertNew = (alert) => {
       localStorage.setItem('hasNewAlerts', 'true')

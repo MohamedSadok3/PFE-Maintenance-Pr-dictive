@@ -233,19 +233,23 @@ class PlantRegistration:
         return {}
 
     def to_dict(self) -> dict:
-        payload = self.payload
-        if isinstance(payload, dict):
-            payload = json.dumps(payload)
         payload_data = self.payload_data
+        # Registration payloads contain account provisioning material. Never
+        # expose passwords or hashes through API serialization.
+        safe_payload = json.loads(json.dumps(payload_data))
+        for user in (safe_payload.get("users") or {}).values():
+            if isinstance(user, dict):
+                user.pop("password", None)
+                user.pop("password_hash", None)
         return {
             "id": self.id,
             "plant_name": self.plant_name,
             "plant_code": self.plant_code,
             "contact_name": self.contact_name,
             "contact_email": self.contact_email,
-            "payload": payload,
-            "payload_data": payload_data,
-            "documents": payload_data.get("documents") or {},
+            "payload": json.dumps(safe_payload),
+            "payload_data": safe_payload,
+            "documents": safe_payload.get("documents") or {},
             "status": self.status,
             "review_note": self.review_note,
             "reviewed_by": self.reviewed_by,

@@ -29,14 +29,20 @@ class RedisConsumer:
             try:
                 prediction = json.loads(message.get("data", "{}"))
                 defect_scores = prediction.get("defect_scores") or {}
+                score = float(prediction.get("defect_score", prediction.get("anomaly_score", 0)))
+                defect_name = prediction.get("defect", "anomaly_detected")
 
+                # Never turn confidence in the normal class into an alert.
+                if defect_name == "normal_operation":
+                    continue
                 if isinstance(defect_scores, dict) and defect_scores:
-                    top_defect, top_score = max(defect_scores.items(), key=lambda item: float(item[1]))
-                    score = float(top_score)
-                    defect_name = top_defect
-                else:
-                    score = float(prediction.get("defect_score", prediction.get("anomaly_score", 0)))
-                    defect_name = prediction.get("defect", "anomaly_detected")
+                    abnormal_scores = {
+                        name: float(value)
+                        for name, value in defect_scores.items()
+                        if name != "normal_operation"
+                    }
+                    if abnormal_scores:
+                        defect_name = max(abnormal_scores, key=abnormal_scores.get)
 
                 severity = self.alert_service.severity_from_score(score)
 
@@ -46,13 +52,10 @@ class RedisConsumer:
                     continue
 
                 incoming_plant_id = prediction.get("plant_id")
-                if incoming_plant_id:
-                    plant_id = int(incoming_plant_id)
-                else:
-                    plant_id = self.alert_service.get_default_plant_id()
-
-                if not plant_id:
+                if incoming_plant_id is None:
+                    logger.warning("Dropped prediction without plant_id")
                     continue
+                plant_id = int(incoming_plant_id)
 
                 alert = self.alert_service.insert_alert(
                     plant_id=plant_id,

@@ -20,7 +20,8 @@ class IoTMqttConfig:
             "host": self.host,
             "port": self.port,
             "username": self.username or "",
-            "password": self.password or "",
+            "password": "",
+            "password_configured": bool(self.password),
             "updated_at": isoformat_value(self.updated_at),
         }
 

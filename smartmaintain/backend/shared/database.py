@@ -34,15 +34,13 @@ class _PooledConnection:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self._conn is not None:
-            if exc_type is not None:
-                self._conn.rollback()
+            # Always reset transaction state before returning a connection to
+            # the pool. This also protects early-return code paths that did not
+            # explicitly commit.
+            self._conn.rollback()
             _get_pool().putconn(self._conn)
         return False
 
 
 def get_db_connection():
     return _PooledConnection()
-
-
-def real_dict_cursor():
-    return RealDictCursor

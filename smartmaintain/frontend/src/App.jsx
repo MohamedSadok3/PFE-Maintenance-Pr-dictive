@@ -1,26 +1,29 @@
+import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import Layout from './components/Layout'
 import RequireAuth from './components/RequireAuth'
-import AlertesPage from './pages/AlertesPage'
-import AlertDetailPage from './pages/AlertDetailPage'
-import DashboardPage from './pages/DashboardPage'
-import FineTuningPage from './pages/FineTuningPage'
-import LoginPage from './pages/LoginPage'
-import PlantRegistrationPage from './pages/PlantRegistrationPage'
-import PlantProfilePage from './pages/PlantProfilePage'
-import ComposantsPage from './pages/ComposantsPage'
-import SurveillancePage from './pages/SurveillancePage'
-import SuperAdminPlantsPage from './pages/SuperAdminPlantsPage'
-import SuperAdminRegistrationsPage from './pages/SuperAdminRegistrationsPage'
-import UtilisateursPage from './pages/UtilisateursPage'
-import IoTConfigPage from './pages/IoTConfigPage'
-import ProfilePage from './pages/ProfilePage'
+
+const AlertesPage = lazy(() => import('./pages/AlertesPage'))
+const AlertDetailPage = lazy(() => import('./pages/AlertDetailPage'))
+const DashboardPage = lazy(() => import('./pages/DashboardPage'))
+const FineTuningPage = lazy(() => import('./pages/FineTuningPage'))
+const LoginPage = lazy(() => import('./pages/LoginPage'))
+const PlantRegistrationPage = lazy(() => import('./pages/PlantRegistrationPage'))
+const PlantProfilePage = lazy(() => import('./pages/PlantProfilePage'))
+const ComposantsPage = lazy(() => import('./pages/ComposantsPage'))
+const SurveillancePage = lazy(() => import('./pages/SurveillancePage'))
+const SuperAdminPlantsPage = lazy(() => import('./pages/SuperAdminPlantsPage'))
+const SuperAdminRegistrationsPage = lazy(() => import('./pages/SuperAdminRegistrationsPage'))
+const UtilisateursPage = lazy(() => import('./pages/UtilisateursPage'))
+const IoTConfigPage = lazy(() => import('./pages/IoTConfigPage'))
+const ProfilePage = lazy(() => import('./pages/ProfilePage'))
 
 function App() {
   return (
     <>
-      <Routes>
+      <Suspense fallback={<div className="min-h-screen grid place-items-center text-slate-600">Chargement…</div>}>
+        <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/inscription-usine" element={<PlantRegistrationPage />} />
         <Route path="/alerte/*" element={<Navigate to="/alertes" replace />} />
@@ -111,7 +114,8 @@ function App() {
         </Route>
 
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
+        </Routes>
+      </Suspense>
       <Toaster position="top-right" />
     </>
   )

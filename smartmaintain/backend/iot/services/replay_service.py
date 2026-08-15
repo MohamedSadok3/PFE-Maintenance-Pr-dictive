@@ -16,7 +16,6 @@ import json
 import logging
 import threading
 import time
-from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -234,9 +233,13 @@ class ReplayService:
                     
         except Exception as e:
             logger.error(f"Replay failed for machine '{machine}': {e}", exc_info=True)
-            # Retry after delay
+
+    def _run_replay_with_retries(self, machine: str):
+        """Keep a replay worker alive without growing the Python call stack."""
+        while True:
+            self.replay_csv(machine)
+            logger.info("Retrying replay for machine '%s' in 10 seconds", machine)
             time.sleep(10)
-            self.replay_csv(machine)  # Recursive retry
 
     def start_replay_threads(self):
         """Start replay threads for all configured machine types."""
@@ -245,7 +248,7 @@ class ReplayService:
         threads = []
         for machine in MACHINE_TYPES:
             thread = threading.Thread(
-                target=self.replay_csv,
+                target=self._run_replay_with_retries,
                 args=(machine,),
                 daemon=True,
                 name=f"ReplayThread-{machine}"
@@ -255,30 +258,3 @@ class ReplayService:
             logger.info(f"Started replay thread for machine '{machine}'")
         
         return threads
-
-
-class CSVGenerator:
-    """
-    Utility to generate CSV files for simulation (deprecated - use generate_all_csv_data.py).
-    
-    Kept for backward compatibility but not actively used.
-    """
-
-    def __init__(self):
-        self.data_dir = Path(__file__).parent.parent / "data"
-        self.rows_per_file = int(get_env("IOT_ROWS_PER_FILE", 500))
-
-    def _build_timestamps(self):
-        """Generate timestamp sequence for CSV."""
-        start = datetime(2025, 1, 1, 0, 0, 0)
-        return [(start + pd.Timedelta(minutes=i)).isoformat() for i in range(self.rows_per_file)]
-
-    def generate_csv_files(self):
-        """
-        Generate CSV files (placeholder - actual generation in separate script).
-        
-        Note: Use generate_all_csv_data.py for actual CSV generation.
-        """
-        self.data_dir.mkdir(parents=True, exist_ok=True)
-        logger.warning("CSVGenerator.generate_csv_files() is deprecated. Use generate_all_csv_data.py")
-        return

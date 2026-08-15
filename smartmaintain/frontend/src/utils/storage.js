@@ -21,5 +21,7 @@ export function setStoredToken(token) {
 }
 
 export function clearSession() {
-  localStorage.clear()
+  localStorage.removeItem('token')
+  localStorage.removeItem('user')
+  localStorage.removeItem('hasNewAlerts')
 }

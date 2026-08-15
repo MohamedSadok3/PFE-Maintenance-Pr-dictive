@@ -222,7 +222,10 @@ class AlertService:
         row = cur.fetchone()
         if not row:
             raise AlertNotFoundException("Alerte introuvable.")
-        return self.get_alert_with_users(alert_id)
+        # Read through the same transaction. A second pooled connection cannot
+        # see this uncommitted update and previously returned stale state.
+        cur.execute(ALERT_SELECT_WITH_USERS, (alert_id,))
+        return Alert.from_row(cur.fetchone())
 
     def _upsert_intervention(self, cur, alert_id, alert_row):
         """Crée ou met à jour l'intervention liée à l'alerte assignée."""

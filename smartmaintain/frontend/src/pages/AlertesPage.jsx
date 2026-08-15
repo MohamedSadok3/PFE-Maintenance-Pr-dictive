@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import api from '../services/api'
-import { createSocket } from '../services/socketService'
+import { connectSocket } from '../services/socketService'
 import { getUser } from '../services/authService'
 import {
   acknowledgeAlert,
@@ -11,6 +11,7 @@ import {
   reopenAlert,
   resolveAlert,
 } from '../services/alerteService'
+import { MACHINE_OPTIONS } from '../constants/machines'
 
 const LIMIT = 20
 
@@ -142,18 +143,23 @@ function AlertesPage() {
   }, [isManager])
 
   useEffect(() => {
-    const socket = createSocket()
-    socket.on('alert:new', (incoming) => {
+    const socket = connectSocket()
+    const onAlertNew = (incoming) => {
       setRows((prev) => [incoming, ...prev].slice(0, LIMIT))
       setFlashIds((prev) => [...prev, incoming.id])
       window.setTimeout(() => {
         setFlashIds((prev) => prev.filter((id) => id !== incoming.id))
       }, 2000)
-    })
-    socket.on('alert:updated', (updated) => {
+    }
+    const onAlertUpdated = (updated) => {
       setRows((prev) => prev.map((item) => (item.id === updated.id ? updated : item)))
-    })
-    return () => socket.disconnect()
+    }
+    socket.on('alert:new', onAlertNew)
+    socket.on('alert:updated', onAlertUpdated)
+    return () => {
+      socket.off('alert:new', onAlertNew)
+      socket.off('alert:updated', onAlertUpdated)
+    }
   }, [])
 
   const onAssign = async (alertId, value) => {
@@ -273,10 +279,9 @@ function AlertesPage() {
           className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
         >
           <option value="">Toutes machines</option>
-          <option value="moteur">Moteur</option>
-          <option value="pompe">Pompe</option>
-          <option value="compresseur">Compresseur</option>
-          <option value="echangeur">Echangeur</option>
+          {MACHINE_OPTIONS.map(({ value, label }) => (
+            <option key={value} value={value}>{label}</option>
+          ))}
         </select>
 
         <select

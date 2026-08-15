@@ -15,7 +15,7 @@ import pytest
 
 # Resolve import paths
 sys.path.insert(0, str(Path(__file__).parent.parent / "auth"))
-sys.path.insert(0, str(Path(__file__).parent.parent / "shared"))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import os
 os.environ.setdefault("POSTGRES_URL", "postgresql://test:test@localhost/test")
@@ -79,7 +79,7 @@ class TestJWT:
 
 class TestAuthenticateUser:
     def _make_service(self):
-        with patch("shared.database.get_db_connection"):
+        with patch("services.auth_service.get_db_connection"):
             from services.auth_service import AuthService
             return AuthService()
 
@@ -96,7 +96,7 @@ class TestAuthenticateUser:
 
         svc = self._make_service()
 
-        with patch("shared.database.get_db_connection") as mock_conn:
+        with patch("services.auth_service.get_db_connection") as mock_conn:
             mock_ctx  = MagicMock()
             mock_cur  = MagicMock()
             mock_cur.fetchone.return_value = mock_row
@@ -122,7 +122,7 @@ class TestAuthenticateUser:
 
         svc = self._make_service()
 
-        with patch("shared.database.get_db_connection") as mock_conn:
+        with patch("services.auth_service.get_db_connection") as mock_conn:
             mock_ctx = MagicMock()
             mock_cur = MagicMock()
             mock_cur.fetchone.return_value = mock_row
@@ -138,7 +138,7 @@ class TestAuthenticateUser:
     def test_nonexistent_user_returns_none(self):
         svc = self._make_service()
 
-        with patch("shared.database.get_db_connection") as mock_conn:
+        with patch("services.auth_service.get_db_connection") as mock_conn:
             mock_ctx = MagicMock()
             mock_cur = MagicMock()
             mock_cur.fetchone.return_value = None
@@ -155,7 +155,7 @@ class TestAuthenticateUser:
 
 class TestUpdateProfile:
     def _make_service(self):
-        with patch("shared.database.get_db_connection"):
+        with patch("services.auth_service.get_db_connection"):
             from services.auth_service import AuthService
             return AuthService()
 

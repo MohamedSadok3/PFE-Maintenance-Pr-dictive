@@ -6,7 +6,6 @@ from flask_cors import CORS
 from shared.config import get_env
 from shared.constants import IOT_DEFAULT_PORT
 from routes.iot import iot_bp
-from services.config_service import ConfigService
 from services.replay_service import ReplayService
 
 
@@ -24,8 +23,7 @@ def create_app():
 
 
 def create_and_start_services():
-    """Initialize database schema and start background replay threads."""
-    ConfigService().init_db()
+    """Start background replay threads after migrations have completed."""
     replay_service = ReplayService()
     replay_service.start_replay_threads()
     return replay_service

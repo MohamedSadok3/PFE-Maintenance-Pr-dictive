@@ -1,5 +1,5 @@
 import api from './api'
-import { clearSession, getStoredToken, getStoredUser } from '../utils/storage'
+import { clearSession, getStoredUser } from '../utils/storage'
 
 // Auth
 export const login = (email, password) => api.post('/api/auth/login', { email, password })
@@ -10,8 +10,6 @@ export const logout = () => {
 }
 
 export const getUser = () => getStoredUser()
-export const getToken = () => getStoredToken()
-
 export const getMe = () => api.get('/api/auth/me')
 export const updateProfile = (payload) => api.patch('/api/auth/me', payload)
 

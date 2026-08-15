@@ -256,7 +256,8 @@ REGISTRATION_SELECT_BY_ID = """
 
 REGISTRATION_REJECT = """
     UPDATE plant_registrations
-    SET status = 'rejected', review_note = %s, reviewed_by = %s, reviewed_at = NOW()
+    SET status = 'rejected', review_note = %s, reviewed_by = %s,
+        payload = %s, reviewed_at = NOW()
     WHERE id = %s
     RETURNING id, plant_name, plant_code, contact_name, contact_email,
               payload, status, review_note, reviewed_by, reviewed_at, created_at;
@@ -269,7 +270,8 @@ REGISTRATION_INSERT_USER = """
 
 REGISTRATION_APPROVE = """
     UPDATE plant_registrations
-    SET status = 'approved', review_note = %s, reviewed_by = %s, reviewed_at = NOW()
+    SET status = 'approved', review_note = %s, reviewed_by = %s,
+        payload = %s, reviewed_at = NOW()
     WHERE id = %s
     RETURNING id, plant_name, plant_code, contact_name, contact_email,
               payload, status, review_note, reviewed_by, reviewed_at, created_at;

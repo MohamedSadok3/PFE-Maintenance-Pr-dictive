@@ -4,11 +4,12 @@ import { SOCKET_URL } from './api'
 // Singleton socket instance — one connection shared across the whole app.
 // Creating a new io() on every hook mount caused multiple overlapping
 // connections that flooded each other and starved the real-time feed.
-let _socket = null
+let socket = null
 
 export function getSocket() {
-  if (!_socket) {
-    _socket = io(SOCKET_URL, {
+  if (!socket) {
+    socket = io(SOCKET_URL, {
+      auth: (callback) => callback({ token: localStorage.getItem('token') }),
       transports: ['websocket', 'polling'],
       autoConnect: false,
       reconnection: true,
@@ -16,11 +17,11 @@ export function getSocket() {
       reconnectionDelayMax: 10000,
     })
   }
-  return _socket
+  return socket
 }
 
-// Keep createSocket as an alias for backwards compatibility with any
-// other callers (e.g. useDashboard).
-export function createSocket() {
-  return getSocket()
+export function connectSocket() {
+  const currentSocket = getSocket()
+  if (!currentSocket.connected) currentSocket.connect()
+  return currentSocket
 }

@@ -28,7 +28,7 @@ import requests
 import socketio
 from flask import Flask, Response, jsonify, request
 from flask_cors import CORS
-from flask_socketio import SocketIO
+from flask_socketio import SocketIO, join_room
 
 from shared.config import get_env
 from shared.constants import (
@@ -97,6 +97,43 @@ alertes_socket = socketio.Client(reconnection=True)
 logger.info(f"Gateway initialized on port {PORT}")
 logger.info(f"Frontend origins: {FRONTEND_ORIGINS}")
 logger.info(f"Service map: {SERVICE_MAP}")
+
+SUPERADMIN_ROOM = "role:superadmin"
+
+
+@socketio_server.on("connect")
+def authenticate_socket(auth):
+    """Authenticate Socket.IO clients and isolate them by plant."""
+    token = (auth or {}).get("token") if isinstance(auth, dict) else None
+    if not token:
+        logger.warning("Rejected WebSocket connection without token")
+        return False
+    try:
+        payload = decode_token(token)
+    except Exception:
+        logger.warning("Rejected WebSocket connection with invalid token")
+        return False
+
+    if payload.get("role") == "superadmin":
+        join_room(SUPERADMIN_ROOM)
+        return True
+
+    plant_id = payload.get("plant_id")
+    if plant_id is None:
+        logger.warning("Rejected WebSocket connection without plant scope")
+        return False
+    join_room(f"plant:{int(plant_id)}")
+    return True
+
+
+def emit_to_tenant(event, data):
+    """Emit an event only to its plant and to authorized superadmins."""
+    plant_id = data.get("plant_id") if isinstance(data, dict) else None
+    if plant_id is None:
+        logger.warning("Dropped unscoped WebSocket event %s", event)
+        return
+    socketio_server.emit(event, data, to=f"plant:{int(plant_id)}")
+    socketio_server.emit(event, data, to=SUPERADMIN_ROOM)
 
 
 
@@ -288,21 +325,21 @@ def health() -> Dict:
 @alertes_socket.on("alert:new")
 def on_alert_new(data):
     """Forward new alert from Alertes service to frontend."""
-    socketio_server.emit("alert:new", data)
+    emit_to_tenant("alert:new", data)
     logger.debug(f"Forwarded alert:new: {data.get('id', 'unknown')}")
 
 
 @alertes_socket.on("alert:updated")
 def on_alert_updated(data):
     """Forward alert update from Alertes service to frontend."""
-    socketio_server.emit("alert:updated", data)
+    emit_to_tenant("alert:updated", data)
     logger.debug(f"Forwarded alert:updated: {data.get('id', 'unknown')}")
 
 
 @alertes_socket.on("sensor:data")
 def on_sensor_data(data):
     """Forward sensor data from Alertes service to frontend."""
-    socketio_server.emit("sensor:data", data)
+    emit_to_tenant("sensor:data", data)
 
 
 def connect_to_alertes():
@@ -373,7 +410,7 @@ def redis_to_websocket_bridge():
                         machine = payload.get('machine', 'unknown')
                         
                         # Emit to frontend WebSocket
-                        socketio_server.emit("sensor:data", payload)
+                        emit_to_tenant("sensor:data", payload)
                         logger.debug(f"📡 Emitted sensor:data for {machine}")
                         
                     except json.JSONDecodeError as e:

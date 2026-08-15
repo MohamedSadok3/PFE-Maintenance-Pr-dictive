@@ -12,6 +12,7 @@ from routes.components import components_bp
 def create_app():
     """Create and configure the Flask application."""
     app = Flask(__name__)
+    app.config["MAX_CONTENT_LENGTH"] = 15 * 1024 * 1024
     CORS(app)
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
@@ -27,11 +28,6 @@ def create_app():
 
 
 app = create_app()
-
-
-# Initialize database on startup
-from services.registration_service import RegistrationService
-_registration_service = RegistrationService()  # This will initialize the database
 
 
 if __name__ == "__main__":

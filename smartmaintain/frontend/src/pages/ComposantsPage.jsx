@@ -6,6 +6,7 @@ import {
   getComponents,
   updateComponent,
 } from '../services/componentService'
+import { MACHINE_OPTIONS } from '../constants/machines'
 
 function emptyForm() {
   return { name: '', type: 'moteur', enabled: true }
@@ -116,10 +117,9 @@ function ComposantsPage() {
             onChange={(event) => setForm((prev) => ({ ...prev, type: event.target.value }))}
             className="w-full rounded-lg border border-slate-300 px-3 py-2"
           >
-            <option value="moteur">Moteur</option>
-            <option value="pompe">Pompe</option>
-            <option value="compresseur">Compresseur</option>
-            <option value="echangeur">Echangeur</option>
+            {MACHINE_OPTIONS.map(({ value, label }) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
           </select>
         </label>
         <label className="inline-flex items-center gap-2 text-sm text-slate-700 pb-2">

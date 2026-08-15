@@ -4,10 +4,8 @@ from shared.constants import MACHINE_TYPES
 from shared.database import get_db_connection
 from models.models import IoTMqttConfig, IoTSensorConfig
 from queries import (
-    IOT_MQTT_CONFIG_CREATE_TABLE,
     IOT_MQTT_SELECT_BY_PLANT,
     IOT_MQTT_UPSERT,
-    IOT_SENSOR_CONFIG_CREATE_TABLE,
     IOT_SENSOR_SELECT_BY_PLANT,
     IOT_SENSOR_UPSERT,
 )
@@ -41,13 +39,6 @@ DEFAULT_SENSOR_DEFINITIONS = {
 
 
 class ConfigService:
-    def init_db(self):
-        with get_db_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(IOT_MQTT_CONFIG_CREATE_TABLE)
-                cur.execute(IOT_SENSOR_CONFIG_CREATE_TABLE)
-                conn.commit()
-
     def get_config(self, plant_id):
         mqtt = self._get_mqtt_config(plant_id)
         sensors = self._get_sensor_configs(plant_id)

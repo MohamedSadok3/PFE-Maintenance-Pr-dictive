@@ -102,7 +102,7 @@ class EmailService:
             "Nous avons bien recu votre demande d'inscription.\n"
             "Elle est en cours de validation par notre equipe.\n\n"
             f"Nom de l'usine: {plant_name}\n"
-            f"Code usine: {plant_code}\n\n"
+            "\n"
             "Vous recevrez un email lorsque la demande sera traitee.\n\n"
             "Cordialement,\n"
             "Equipe SmartMaintain"
@@ -128,7 +128,7 @@ class EmailService:
             f"Bonjour {recipient_name or ''},\n\n"
             f"L'inscription de votre usine a ete approuvee.\n\n"
             f"Nom de l'usine: {plant_name}\n"
-            f"Code usine: {plant_code}\n\n"
+            "\n"
             f"Vous pouvez vous connecter ici: {login_url}\n\n"
             "Cordialement,\n"
             "Equipe SmartMaintain"
@@ -168,7 +168,7 @@ class EmailService:
             f"Une nouvelle demande d'inscription est en attente de validation.\n\n"
             f"ID demande: {registration_id}\n"
             f"Usine: {plant_name}\n"
-            f"Code: {plant_code}\n\n"
+            "\n"
             "Les documents Patente/RNE sont joints a ce message.\n"
         )
         payload = {

@@ -1,8 +1,0 @@
-flask
-flask-cors
-redis
-pandas
-numpy
-python-dotenv
-pyjwt
-psycopg2-binary

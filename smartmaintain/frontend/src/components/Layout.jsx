@@ -1,8 +1,8 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { io } from 'socket.io-client'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { logout } from '../services/authService'
 import { getAlertes } from '../services/alerteService'
+import { connectSocket } from '../services/socketService'
 import { getStoredUser } from '../utils/storage'
 
 const navItems = [
@@ -33,6 +33,8 @@ const titles = {
   '/superadmin/inscriptions': 'Validation usines',
 }
 
+const EMPTY_MACHINES = []
+
 function Layout() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -45,10 +47,7 @@ function Layout() {
   }, [location.pathname])
 
   const user = useMemo(() => getStoredUser() || { name: 'Utilisateur', role: 'technicien' }, [])
-  const userMachineKey = useMemo(
-    () => (Array.isArray(user?.machines) ? user.machines.join('|') : ''),
-    [user?.machines],
-  )
+  const userMachines = user.machines || EMPTY_MACHINES
   const [hasNewAlerts, setHasNewAlerts] = useState(localStorage.getItem('hasNewAlerts') === 'true')
   const [notifications, setNotifications] = useState([])
   const [showNotifications, setShowNotifications] = useState(false)
@@ -65,10 +64,6 @@ function Layout() {
   )
 
   useEffect(() => {
-    setSidebarOpen(false)
-  }, [location.pathname])
-
-  useEffect(() => {
     if (!sidebarOpen) return undefined
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
@@ -77,7 +72,7 @@ function Layout() {
     }
   }, [sidebarOpen])
 
-  const buildNotification = (alert) => {
+  const buildNotification = useCallback((alert) => {
     if (!alert) return null
     const isManager = user.role === 'admin' || user.role === 'superviseur'
     const isTechnicien = user.role === 'technicien'
@@ -112,15 +107,15 @@ function Layout() {
     }
 
     return null
-  }
+  }, [user.id, user.role])
 
-  const syncHasAlerts = (items) => {
+  const syncHasAlerts = useCallback((items) => {
     const hasItems = items.length > 0
     localStorage.setItem('hasNewAlerts', hasItems ? 'true' : 'false')
     setHasNewAlerts(hasItems)
-  }
+  }, [])
 
-  const upsertNotification = (alert) => {
+  const upsertNotification = useCallback((alert) => {
     const candidate = buildNotification(alert)
     setNotifications((prev) => {
       const withoutAlert = prev.filter((item) => item.alertId !== alert.id)
@@ -132,7 +127,7 @@ function Layout() {
       syncHasAlerts(updated)
       return updated
     })
-  }
+  }, [buildNotification, syncHasAlerts])
 
   useEffect(() => {
     let cancelled = false
@@ -156,10 +151,10 @@ function Layout() {
       cancelled = true
       window.clearInterval(timer)
     }
-  }, [user.id, user.role])
+  }, [buildNotification, syncHasAlerts])
 
   useEffect(() => {
-    const hasMachineAccess = (machine) => (user.machines || []).includes(machine)
+    const hasMachineAccess = (machine) => userMachines.includes(machine)
     const isRelevantAlert = (alert) => {
       if (!alert) return false
       if (user.role === 'admin' || user.role === 'superviseur') {
@@ -174,19 +169,25 @@ function Layout() {
       return false
     }
 
-    const socket = io('http://localhost:5000', { transports: ['websocket', 'polling'] })
-    socket.on('alert:new', (alert) => {
+    const socket = connectSocket()
+    const onAlertNew = (alert) => {
       if (isRelevantAlert(alert)) {
         upsertNotification(alert)
       }
-    })
+    }
 
-    socket.on('alert:updated', (alert) => {
+    const onAlertUpdated = (alert) => {
       upsertNotification(alert)
-    })
+    }
 
-    return () => socket.disconnect()
-  }, [user.id, user.role, userMachineKey])
+    socket.on('alert:new', onAlertNew)
+    socket.on('alert:updated', onAlertUpdated)
+
+    return () => {
+      socket.off('alert:new', onAlertNew)
+      socket.off('alert:updated', onAlertUpdated)
+    }
+  }, [upsertNotification, user.id, user.role, userMachines])
 
   useEffect(() => {
     const onDocumentClick = (event) => {
