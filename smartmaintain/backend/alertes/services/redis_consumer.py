@@ -1,6 +1,7 @@
 import json
 import logging
 import threading
+from datetime import datetime, timedelta, timezone
 
 from flask_socketio import SocketIO
 
@@ -16,6 +17,8 @@ class RedisConsumer:
         self.alert_service = AlertService()
         self.predictions_channel = REDIS_ML_PREDICTIONS_CHANNEL
         self.consumer_thread = None
+        # Cache des dernières alertes par machine pour déduplication
+        self.last_alerts = {}  # {machine: {defect: timestamp}}
 
     def consume_predictions(self):
         """Consume ML predictions from Redis and create alerts."""
@@ -57,16 +60,40 @@ class RedisConsumer:
                     continue
                 plant_id = int(incoming_plant_id)
 
-                alert = self.alert_service.insert_alert(
-                    plant_id=plant_id,
-                    machine=prediction.get("machine", "unknown"),
-                    defect=defect_name,
-                    defect_score=score,
-                    confidence=float(prediction.get("confidence", 0)),
-                    severity=severity,
-                )
-
-                self.socketio.emit("alert:new", alert.to_dict())
+                machine = prediction.get("machine", "unknown")
+                
+                # Déduplication: ne créer une alerte que si:
+                # 1. Nouveau défaut différent du précédent sur cette machine
+                # 2. OU dernier défaut similaire il y a plus de 5 minutes (cooldown)
+                now = datetime.now(timezone.utc)
+                should_create_alert = True
+                
+                if machine in self.last_alerts:
+                    last_defect_time = self.last_alerts[machine].get(defect_name)
+                    if last_defect_time:
+                        time_since_last = (now - last_defect_time).total_seconds()
+                        # Cooldown de 5 minutes (300 secondes) entre alertes identiques
+                        if time_since_last < 300:
+                            should_create_alert = False
+                            logger.debug(f"Alerte dédupliquée: {machine}/{defect_name} (dernière il y a {time_since_last:.0f}s)")
+                
+                if should_create_alert:
+                    alert = self.alert_service.insert_alert(
+                        plant_id=plant_id,
+                        machine=machine,
+                        defect=defect_name,
+                        defect_score=score,
+                        confidence=float(prediction.get("confidence", 0)),
+                        severity=severity,
+                    )
+                    
+                    # Mettre à jour le cache de déduplication
+                    if machine not in self.last_alerts:
+                        self.last_alerts[machine] = {}
+                    self.last_alerts[machine][defect_name] = now
+                    
+                    self.socketio.emit("alert:new", alert.to_dict())
+                    logger.info(f"Nouvelle alerte créée: {machine}/{defect_name} (sévérité: {severity})")
 
             except Exception:
                 logger.exception("Error processing prediction")

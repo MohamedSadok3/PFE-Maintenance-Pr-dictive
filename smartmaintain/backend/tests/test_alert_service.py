@@ -17,10 +17,10 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+from tests.import_isolation import activate_service
 
 # Allow imports from the alertes service package
-sys.path.insert(0, str(Path(__file__).parent.parent / "alertes"))
-sys.path.insert(0, str(Path(__file__).parent.parent))
+activate_service("alertes")
 
 # Patch database before importing service
 import shared.database

@@ -58,7 +58,7 @@ POSTGRES_DB=smartmaintain
 JWT_SECRET_KEY=your-secret-key-here  # ⚠️ Changer!
 
 # ML Mode
-MOCK_ML=false  # false = modèles réels
+# Les quatre modèles V7 sont chargés automatiquement.
 
 # Email (optionnel)
 SMTP_SERVER=smtp.gmail.com
@@ -143,14 +143,15 @@ docker compose exec iot python -c "import urllib.request; print(urllib.request.u
 docker-compose exec ml python -c "
 from services.ml_service import MLService
 svc = MLService()
-print('Mock mode:', svc.mock_ml)
+status = svc.get_status()
+print('Model version:', status.get('model_version'))
 print('Models loaded:', list(svc.engine.models.keys()))
 "
 ```
 
 **Attendu**:
 ```
-Mock mode: False
+Model version: v7
 Models loaded: ['moteur', 'pompe', 'compresseur', 'echangeur']
 ```
 
@@ -244,10 +245,10 @@ taskkill /PID [process-id] /F
 
 ```bash
 # Vérifier fichiers
-docker-compose exec ml ls -la /app/models/trained/
+docker compose exec ml ls -la /app/models_v7/
 
 # Relancer
-docker-compose restart ml
+docker compose restart ml
 ```
 
 ---
@@ -400,8 +401,8 @@ Après installation:
 
 ---
 
-**Version**: 1.0  
-**Date**: 22 Juillet 2026  
-**Status**: Prototype PFE — non destiné à la production sans durcissement complémentaire
+**Version**: 2.0 (V7-only)  
+**Date**: 17 Août 2026  
+**Status**: Prototype PFE — Refactorisé pour V7 uniquement, simplifié pour maintenance
 
 **Démarrage**: `docker-compose up -d` 🚀

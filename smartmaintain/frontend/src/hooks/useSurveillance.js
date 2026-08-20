@@ -13,11 +13,12 @@ const MACHINES = {
   echangeur: 'Échangeur',
 }
 
+// V7 sensor names (matching backend V7 models)
 const MACHINE_SENSORS = {
-  moteur: ['vibration', 'current', 'temperature'],
-  pompe: ['pressure_in', 'pressure_out', 'flow_rate', 'vibration'],
-  compresseur: ['pressure', 'temperature_oil', 'temperature_air', 'current'],
-  echangeur: ['temp_in_hot', 'temp_out_hot', 'temp_in_cold', 'temp_out_cold', 'flow_rate'],
+  moteur: ['vbl_feature_00', 'vbl_feature_01', 'vbl_feature_02'],  // V7: Pre-computed VBL features
+  pompe: ['vibration', 'pressure', 'temperature', 'flow_rate'],    // V7: 4 sensors
+  compresseur: ['pressure', 'temperature_oil', 'current'],         // V7: 3 sensors
+  echangeur: ['temp_in_hot', 'temp_out_hot', 'temp_in_cold', 'temp_out_cold', 'flow_rate'],  // V7: 5 sensors
 }
 
 const DEFECT_OPTIONS_BY_TYPE = {

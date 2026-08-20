@@ -1,4 +1,5 @@
 from flask import Blueprint
+from datetime import datetime, timezone
 
 from shared.auth import get_current_user, require_auth
 from shared.constants import MACHINE_TYPES, ROLE_ADMIN, ROLE_SUPERADMIN
@@ -8,6 +9,7 @@ from services.replay_service import ReplayService
 
 iot_bp = Blueprint("iot", __name__)
 config_service = ConfigService()
+injection_service = ReplayService()
 
 
 @iot_bp.route("/status", methods=["GET"])
@@ -95,14 +97,14 @@ def inject():
     if plant_id is None:
         return json_error("plant_id est requis.", 400)
 
-    service = ReplayService()
+    service = injection_service
+    service.source_type = body.get("source_type", "simulation")
     # Allow caller to override the plant_id for this injection
     service.plant_id = int(plant_id)
 
-    # Build a minimal window from the single injected row so the statistical
-    # feature computation has something to work with.
-    row = {"timestamp": timestamp or __import__("datetime").datetime.utcnow().isoformat(), **sensors}
-    window = [row] * service.WINDOW_SIZE
-
-    payload = service.publish_machine_window(machine, window)
-    return json_response({"message": "Injected", "payload": payload}, 201)
+    row = {"timestamp": timestamp or datetime.now(timezone.utc).isoformat(), **sensors}
+    payload = service.ingest_measure(machine, row)
+    if payload is None:
+        return json_error("unsupported_raw_input", 422)
+    status_code = 202 if payload.get("error") == "acquisition_insuffisante" else 201
+    return json_response({"message": "Injected", "payload": payload}, status_code)

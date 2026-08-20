@@ -11,4 +11,3 @@ import os
 os.environ.setdefault("POSTGRES_URL", "postgresql://test:test@localhost/test")
 os.environ.setdefault("JWT_SECRET",   "test-secret-key-for-unit-tests-only")
 os.environ.setdefault("REDIS_URL",    "redis://localhost:6379")
-os.environ.setdefault("MOCK_ML",      "true")

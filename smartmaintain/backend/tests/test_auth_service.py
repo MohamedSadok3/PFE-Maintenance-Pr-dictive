@@ -12,6 +12,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+from tests.import_isolation import activate_service
 
 # Resolve import paths
 sys.path.insert(0, str(Path(__file__).parent.parent / "auth"))
@@ -79,6 +80,7 @@ class TestJWT:
 
 class TestAuthenticateUser:
     def _make_service(self):
+        activate_service("auth")
         with patch("services.auth_service.get_db_connection"):
             from services.auth_service import AuthService
             return AuthService()
@@ -110,7 +112,6 @@ class TestAuthenticateUser:
 
     def test_correct_password_returns_user(self):
         import bcrypt
-        from models.models import User
 
         real_hash = bcrypt.hashpw(b"correct_password", bcrypt.gensalt()).decode()
 
@@ -121,6 +122,7 @@ class TestAuthenticateUser:
         }
 
         svc = self._make_service()
+        from models.models import User
 
         with patch("services.auth_service.get_db_connection") as mock_conn:
             mock_ctx = MagicMock()
@@ -155,6 +157,7 @@ class TestAuthenticateUser:
 
 class TestUpdateProfile:
     def _make_service(self):
+        activate_service("auth")
         with patch("services.auth_service.get_db_connection"):
             from services.auth_service import AuthService
             return AuthService()

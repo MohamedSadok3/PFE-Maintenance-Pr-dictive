@@ -23,7 +23,7 @@ def create_app():
 
 
 def create_and_start_services():
-    """Start background replay threads after migrations have completed."""
+    """Start background replay threads."""
     replay_service = ReplayService()
     replay_service.start_replay_threads()
     return replay_service
@@ -32,8 +32,6 @@ def create_and_start_services():
 app = create_app()
 
 # Start background services when the module is loaded by a WSGI server
-# (gunicorn, eventlet, etc.).  When running directly the block below also
-# triggers them via __main__.
 _replay_service = create_and_start_services()
 
 

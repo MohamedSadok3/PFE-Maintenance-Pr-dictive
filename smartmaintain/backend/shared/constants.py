@@ -65,16 +65,6 @@ FRONTEND_DEFAULT_ORIGINS = (
 REDIS_DEFAULT_URL = "redis://localhost:6379"
 REDIS_SENSOR_CHANNEL = "sensor_data"
 REDIS_ML_PREDICTIONS_CHANNEL = "ml_predictions"
-MOCK_ML_DEFAULT_ENABLED = False
-ML_DEFAULT_MOCK_JOB_ID = "mock-job-1"
-
-BEST_MODEL_BY_MACHINE = {
-    "moteur": "LSTM-moteur-v2",
-    "pompe": "LSTM-pompe-v2",
-    "compresseur": "Transformer-compresseur-v1",
-    "echangeur": "LSTM-echangeur-v2",
-}
-
 # External integrations
 RESEND_API_DEFAULT_URL = "https://api.resend.com/emails"
 APP_BASE_DEFAULT_URL = "http://localhost:3000"

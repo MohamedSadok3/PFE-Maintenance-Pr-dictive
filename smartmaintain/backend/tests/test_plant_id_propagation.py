@@ -14,6 +14,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+from tests.import_isolation import activate_service
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "iot"))
 sys.path.insert(0, str(Path(__file__).parent.parent / "ml"))
@@ -30,6 +31,7 @@ os.environ.setdefault("REDIS_URL",    "redis://localhost:6379")
 
 class TestReplayServicePlantId:
     def _make_service(self, plant_id=None):
+        activate_service("iot")
         with patch("redis.from_url") as mock_redis:
             from services.replay_service import ReplayService
             svc = ReplayService.__new__(ReplayService)
@@ -43,12 +45,13 @@ class TestReplayServicePlantId:
     def test_plant_id_included_when_set(self):
         svc = self._make_service(plant_id=3)
 
-        window = [{"vibration": 0.5, "current": 10.0, "timestamp": "2025-01-01T00:00:00"}] * 20
+        window = [{"pressure": 7.5, "current": 15.0, "temperature_oil": 65.0,
+                   "timestamp": "2025-01-01T00:00:00"}] * 30
 
         published = []
         svc.redis_client.publish = lambda ch, data: published.append(json.loads(data))
 
-        svc.publish_machine_window("moteur", window)
+        svc.publish_machine_window("compresseur", window)
 
         assert len(published) == 1
         assert published[0]["plant_id"] == 3
@@ -56,12 +59,13 @@ class TestReplayServicePlantId:
     def test_plant_id_omitted_when_not_set(self):
         svc = self._make_service(plant_id=None)
 
-        window = [{"vibration": 0.5, "current": 10.0, "timestamp": "2025-01-01T00:00:00"}] * 20
+        window = [{"pressure": 7.5, "current": 15.0, "temperature_oil": 65.0,
+                   "timestamp": "2025-01-01T00:00:00"}] * 30
 
         published = []
         svc.redis_client.publish = lambda ch, data: published.append(json.loads(data))
 
-        svc.publish_machine_window("moteur", window)
+        svc.publish_machine_window("compresseur", window)
 
         assert len(published) == 1
         assert "plant_id" not in published[0]
@@ -71,18 +75,28 @@ class TestReplayServicePlantId:
 
 class TestMLServicePlantIdPropagation:
     def _make_service(self):
+        activate_service("ml")
         with patch("redis.from_url"):
-            os.environ["MOCK_ML"] = "true"
             from services.ml_service import MLService
+
+            class FakeEngine:
+                @staticmethod
+                def predict(machine, sensors):
+                    return {
+                        "equipment_type": machine,
+                        "defect": "normal_operation",
+                        "predicted_class": "normal_operation",
+                        "defect_score": 0.1,
+                        "defect_scores": {"normal_operation": 0.9},
+                        "probabilities": {"normal_operation": 0.9},
+                        "confidence": 0.9,
+                        "status": "normal",
+                    }
+
             svc = MLService.__new__(MLService)
             svc.redis_client        = MagicMock()
-            svc.mock_ml             = True
-            from engines.mock_engine import MockMLEngine
-            svc.engine              = MockMLEngine()
+            svc.engine              = FakeEngine()
             svc.supported_models    = ["moteur", "pompe", "compresseur", "echangeur"]
-            from shared.constants import BEST_MODEL_BY_MACHINE
-            svc.best_model_by_machine = dict(BEST_MODEL_BY_MACHINE)
-            svc.active_models       = dict(BEST_MODEL_BY_MACHINE)
             return svc
 
     def test_plant_id_in_prediction_payload(self):
@@ -139,6 +153,7 @@ class TestMLServicePlantIdPropagation:
 
 class TestRedisConsumerPlantId:
     def _make_consumer(self):
+        activate_service("alertes")
         with patch("redis.from_url"):
             with patch("shared.database.get_db_connection"):
                 from services.alert_service import AlertService

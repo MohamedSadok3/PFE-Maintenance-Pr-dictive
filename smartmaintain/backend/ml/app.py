@@ -7,10 +7,7 @@ from flask_cors import CORS
 from shared.config import get_env
 from shared.constants import ML_DEFAULT_PORT
 from routes.predict import ml_bp
-from routes.finetune import finetune_bp
 from routes.status import status_bp
-from routes.feedback import feedback_bp
-from routes.reload import reload_bp
 from services.ml_service import MLService
 
 # Configure logging
@@ -20,34 +17,30 @@ logging.basicConfig(
 )
 
 
-def create_app():
+def create_app(ml_service=None):
     """Create and configure the Flask application."""
     app = Flask(__name__)
     CORS(app)
+    app.extensions["ml_service"] = ml_service or MLService()
     app.register_blueprint(ml_bp, url_prefix="/api/ml")
-    app.register_blueprint(finetune_bp, url_prefix="/api/ml/finetune")
     app.register_blueprint(status_bp, url_prefix="/api/ml/status")
-    app.register_blueprint(feedback_bp, url_prefix="/api/ml/feedback")
-    app.register_blueprint(reload_bp, url_prefix="/api/ml")
 
     @app.route("/health", methods=["GET"])
     def health():
-        ml_service = MLService()
+        ml_service = app.extensions["ml_service"]
         return {
             "status": "ok",
             "service": "ml",
-            "mock_mode": ml_service.mock_ml,
+            "model_version": ml_service.default_version,
+            "available_versions": ml_service.engine.get_available_versions(),
         }
 
     return app
 
 
-app = create_app()
-
-
-def create_and_start_services():
+def create_and_start_services(app):
     """Initialize services and start background threads."""
-    ml_service = MLService()
+    ml_service = app.extensions["ml_service"]
     consumer_thread = threading.Thread(target=ml_service.consume_sensor_data, daemon=True)
     consumer_thread.start()
     return ml_service
@@ -55,7 +48,8 @@ def create_and_start_services():
 
 # Start the Redis consumer when the module is loaded by any WSGI server
 # (gunicorn, eventlet, etc.) — not just when run directly.
-_ml_service = create_and_start_services()
+app = create_app()
+_ml_service = create_and_start_services(app)
 
 
 if __name__ == "__main__":
